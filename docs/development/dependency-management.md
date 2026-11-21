@@ -4,18 +4,24 @@
 
 All external plugin and library versions are declared in `gradle/libs.versions.toml`. Gradle automatically imports this file as the `libs` version catalog.
 
-The catalog manages:
-- Plugin versions (Kotlin JVM, Kotlin Spring and Spring Boot).
-- Library versions (Kotlin, JUnit and Spring Boot).
-- Dependency coordinates and aliases for Spring Boot starters and Jackson.
+The catalog manages plugin versions (Kotlin JVM, Kotlin Spring and Spring Boot), library versions (Kotlin, JUnit and Spring Boot), and aliases for Spring Boot starters and Jackson.
 
 Module build files consume aliases such as `libs.spring.boot.starter.web`; they must not repeat external dependency coordinates or versions.
+
+## Current platform baseline
+
+- Java 25 LTS
+- Kotlin 2.4.21
+- Spring Boot 4.2.0
+- Gradle 9.7.0
+
+Gradle 9.7.0 is used because it supports running on Java 25 and remains within the fully supported Gradle range for Kotlin Gradle Plugin 2.4.21. Re-evaluate this constraint when upgrading Kotlin.
 
 ## Version updates
 
 1. Change the relevant version in `[versions]` in `gradle/libs.versions.toml`.
 2. Keep related plugin and library aliases linked through `version.ref`.
-3. Review Spring Boot compatibility and release notes before upgrading its version.
+3. Review compatibility matrices and release notes before upgrading.
 4. Run `gradle clean test build`.
 5. Review dependency changes and commit the catalog and build-script changes together.
 
