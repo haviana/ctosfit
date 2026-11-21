@@ -5,9 +5,8 @@ plugins {
 }
 
 dependencies {
-    // Import the Spring Boot BOM once per module that consumes Spring Boot-managed libraries.
+    // Import the Spring Boot BOM for application runtime dependencies.
     implementation(platform(libs.spring.boot.dependencies))
-    testImplementation(platform(libs.spring.boot.dependencies))
 
     implementation(project(":identity"))
     implementation(project(":box"))
