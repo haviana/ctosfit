@@ -16,6 +16,8 @@ The first release is deliberately not a complete gym-management system. Billing,
 - [Architecture overview](docs/architecture/overview.md)
 - [Initial domain model](docs/architecture/domain-model.md)
 - [ADR 0001 — Modular monolith](docs/engineering/decisions/0001-modular-monolith.md)
+- [ADR 0002 — AI-assisted development governance](docs/engineering/decisions/0002-ai-assisted-development.md)
+- [AI-assisted development guide](docs/engineering/ai-development.md)
 - [Discovery and pilot plan](docs/operations/discovery-and-pilot.md)
 
 ## Initial technical direction
@@ -45,7 +47,7 @@ The initial product backlog is tracked in [Jira](https://hugohaviana.atlassian.n
 
 ## Reusable engineering standards
 
-This repository should consume and reuse the agents, skills, workflows and engineering standards maintained in [ai-development-umbrella](https://github.com/haviana/ai-development-umbrella), rather than duplicating the umbrella's reusable assets here.
+This repository consumes a curated, Ctosfit-adapted snapshot of the agents, skills, standards, governance and workflows maintained in [AI Development Umbrella](https://github.com/haviana/ai-development-umbrella). Start with [AGENTS.md](AGENTS.md), browse [agents](agents/README.md), [skills](skills/README.md), [standards](standards/engineering-principles.md) and [governance](governance/approval-workflow.md). See [UPSTREAM.md](UPSTREAM.md) for adoption and update policy.
 
 ## Current status
 
