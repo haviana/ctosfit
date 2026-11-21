@@ -1,0 +1,106 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repository-hygiene:
+    name: Repository hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check conflict markers and whitespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -n -E '^(<<<<<<< |=======|>>>>>>> )' -- . ':!*.lock'; then
+            echo "Merge conflict markers found"
+            exit 1
+          fi
+          git diff --check
+      - name: Validate shell scripts when present
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t scripts < <(find . -type f -name '*.sh' -not -path './.git/*' -print)
+          if (("${#scripts[@]}" == 0)); then
+            echo "No shell scripts found; skipping"
+            exit 0
+          fi
+          bash -n "${scripts[@]}"
+
+  backend:
+    name: Backend build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect Gradle project
+        id: gradle
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f ./gradlew ]] || find . -type f \( -name '*.gradle' -o -name '*.gradle.kts' \) -not -path './.git/*' -print -quit | grep -q .; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No Gradle project found; backend checks will be skipped."
+          fi
+      - uses: actions/setup-java@v4
+        if: steps.gradle.outputs.present == 'true'
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.gradle.outputs.present == 'true'
+      - name: Run Gradle checks
+        if: steps.gradle.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f ./gradlew ]]; then
+            bash ./gradlew check
+          else
+            echo "Gradle build files exist but ./gradlew is missing."
+            exit 1
+          fi
+
+  frontend:
+    name: Frontend build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect frontend project
+        id: frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f package.json ]]; then
+            if [[ ! -f package-lock.json ]]; then
+              echo "package.json exists but package-lock.json is missing; npm ci cannot run reproducibly."
+              exit 1
+            fi
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No root npm project found; frontend checks will be skipped."
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.frontend.outputs.present == 'true'
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install and verify frontend packages
+        if: steps.frontend.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run --if-present lint
+          npm run --if-present test
+          npm run --if-present build
