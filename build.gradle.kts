@@ -17,6 +17,8 @@ subprojects {
     }
 
     dependencies {
+        // Align test libraries consistently across every module with the Spring Boot BOM.
+        add("testImplementation", platform(libs.spring.boot.dependencies))
         add("testImplementation", libs.kotlin.test)
         add("testImplementation", libs.junit.jupiter)
     }
