@@ -12,13 +12,13 @@ Workout-first CrossFit / Cross Training platform. This repository starts as a Ko
 - `app` — Spring Boot composition root
 
 ## Stack
-Java 21 · Kotlin 2.1.20 · Spring Boot 3.5.0 · Gradle Kotlin DSL · JUnit 5
+Java 25 LTS · Kotlin 2.4.21 · Spring Boot 4.2.0 · Gradle 9.7.0 · Gradle Kotlin DSL · JUnit 5
 
 ## Dependency management
 All plugin and library versions are centralized in [gradle/libs.versions.toml](gradle/libs.versions.toml). Module build files use the generated `libs.*` aliases; do not hardcode dependency versions in module scripts. See [dependency management](docs/development/dependency-management.md).
 
 ## Run
-Requirements: JDK 21 and Gradle 8.14.1 or compatible.
+Requirements: JDK 25 and Gradle 9.7.0.
 ```bash
 gradle clean test
 gradle :app:bootRun
