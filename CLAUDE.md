@@ -32,6 +32,7 @@ Workout-first CrossFit / Cross Training platform. Current foundation: Kotlin/Spr
 - Use version-catalog aliases (`libs.*`) in every module build script; never hardcode dependency versions there.
 - Keep repositories centralized in `settings.gradle.kts`.
 - Import the Spring Boot BOM in each module that consumes Spring Boot-managed dependencies.
+- Current baseline: Java 25, Kotlin 2.4.21, Spring Boot 4.2.0, Gradle 9.7.0.
 - Update the dependency-management documentation when the catalog policy changes.
 
 ## Kotlin and Spring
