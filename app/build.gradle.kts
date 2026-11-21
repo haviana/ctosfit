@@ -1,14 +1,13 @@
 plugins {
-    id("org.springframework.boot")
-    kotlin("jvm")
-    kotlin("plugin.spring")
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.spring)
 }
 
 dependencies {
-    // Spring Boot's Gradle plugin does not automatically apply dependency management.
-    // Import the Boot BOM so starters and Jackson modules receive compatible versions.
-    implementation(platform("org.springframework.boot:spring-boot-dependencies:3.5.0"))
-    testImplementation(platform("org.springframework.boot:spring-boot-dependencies:3.5.0"))
+    // Import the Spring Boot BOM once per module that consumes Spring Boot-managed libraries.
+    implementation(platform(libs.spring.boot.dependencies))
+    testImplementation(platform(libs.spring.boot.dependencies))
 
     implementation(project(":identity"))
     implementation(project(":box"))
@@ -17,12 +16,12 @@ dependencies {
     implementation(project(":results"))
     implementation(project(":performance"))
 
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation(kotlin("reflect"))
+    implementation(libs.spring.boot.starter.web)
+    implementation(libs.spring.boot.starter.actuator)
+    implementation(libs.jackson.module.kotlin)
+    implementation(libs.kotlin.reflect)
 
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation(libs.spring.boot.starter.test)
 }
 
 tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
