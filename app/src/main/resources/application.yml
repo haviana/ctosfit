@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: ctosfit
+server:
+  shutdown: graceful
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+info:
+  app:
+    name: CTOSFit
+    description: Cross-training programming and results platform
