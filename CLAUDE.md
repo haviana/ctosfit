@@ -27,6 +27,13 @@ Workout-first CrossFit / Cross Training platform. Current foundation: Kotlin/Spr
 - The app module may depend on all business modules.
 - Avoid a dumping-ground shared/common module.
 
+## Gradle dependency management
+- Declare plugin and external library versions only in `gradle/libs.versions.toml`.
+- Use version-catalog aliases (`libs.*`) in every module build script; never hardcode dependency versions there.
+- Keep repositories centralized in `settings.gradle.kts`.
+- Import the Spring Boot BOM in each module that consumes Spring Boot-managed dependencies.
+- Update the dependency-management documentation when the catalog policy changes.
+
 ## Kotlin and Spring
 - Kotlin official style, immutable values by default, constructor injection.
 - No field injection or service locator.
