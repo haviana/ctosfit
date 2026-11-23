@@ -33,9 +33,9 @@ The initial compatible runtime and framework baseline is recorded with the build
 
 ## Backend quick start
 
-The initial backend is a Gradle multi-project build. It contains a Spring Boot `app` plus six Kotlin library modules. Java 21, Kotlin 2.2.21, Spring Boot 3.5.16 and Gradle 8.14.3 are pinned as the initial compatible baseline.
+The initial backend is a Gradle multi-project build. It contains a Spring Boot `app` plus six Kotlin library modules. Java 25, Kotlin 2.4.21, Spring Boot 4.2.0 and Gradle 9.7.0 are pinned as the initial compatible baseline.
 
-With a Java 21 JDK available:
+With a Java 25 JDK available:
 
 ```sh
 ./gradlew :app:bootRun

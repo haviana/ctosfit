@@ -5,7 +5,7 @@ plugins {
     id("io.spring.dependency-management")
 }
 
-java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
 
 dependencies {
     implementation(project(":identity"))
@@ -14,7 +14,7 @@ dependencies {
     implementation(project(":programming"))
     implementation(project(":results"))
     implementation(project(":performance"))
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
 }
