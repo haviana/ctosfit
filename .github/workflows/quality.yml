@@ -58,6 +58,8 @@ jobs:
           cache: gradle
       - uses: gradle/actions/setup-gradle@v4
         if: steps.gradle.outputs.present == 'true'
+        with:
+          gradle-version: '9.7.0'
       - name: Run Gradle checks
         if: steps.gradle.outputs.present == 'true'
         shell: bash
@@ -66,8 +68,7 @@ jobs:
           if [[ -f ./gradlew ]]; then
             bash ./gradlew check
           else
-            echo "Gradle build files exist but ./gradlew is missing."
-            exit 1
+            gradle check
           fi
 
   frontend:
