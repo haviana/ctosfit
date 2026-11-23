@@ -27,7 +27,23 @@ The first release is deliberately not a complete gym-management system. Billing,
 - Authentication: OIDC/OAuth2 with Spring Security
 - Delivery: Docker-based local development and GitHub Actions
 
-Exact runtime/framework versions are intentionally a separate implementation decision and must be checked for compatibility and support before the first build.
+The initial compatible runtime and framework baseline is recorded with the build. Review supported versions when upgrading dependencies.
+
+## Backend quick start
+
+The initial backend is a Gradle multi-project build. It contains a Spring Boot `app` plus six Kotlin library modules. Java 21, Kotlin 2.2.21, Spring Boot 3.5.16 and Gradle 8.14.3 are pinned as the initial compatible baseline.
+
+With a Java 21 JDK available:
+
+```sh
+./gradlew :app:bootRun
+```
+
+Then open `http://localhost:8080/`; the starter endpoint returns `{"service":"ctosfit","status":"running"}`. Build all modules with `./gradlew build`.
+
+### Module boundaries
+
+See [backend module boundaries](docs/architecture/backend-modules.md) for ownership and dependency rules.
 
 ## Engineering principles
 
