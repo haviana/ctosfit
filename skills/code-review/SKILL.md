@@ -1,14 +1,11 @@
----
-name: code-review
-description: Independently review code changes for correctness, security, regressions and maintainability.
----
-# Code review
+# Skill: Independent Code Review
 
-1. Confirm requirements and scope.
-2. Read surrounding code and conventions.
-3. Trace behavior, callers, data flow and failure paths.
-4. Check security, privacy, authorization, concurrency and compatibility.
-5. Assess tests and run relevant checks when authorized.
-6. Report actionable findings with severity, file/line, evidence and remediation.
+1. Read the issue/acceptance criteria and relevant architecture/product docs.
+2. Inspect the full diff and surrounding code.
+3. Check correctness, security, tenant boundaries, data integrity and failure modes first.
+4. Verify tests cover behavior rather than implementation details.
+5. Check migrations, API compatibility, observability and rollback implications.
+6. Produce findings with severity, file/line, impact and actionable remediation.
+7. State verification limits and checks not run.
 
-Never approve your own changes. Do not infer that a check passed without executing it.
+Do not approve a change you authored. Do not merge or waive required checks.

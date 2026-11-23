@@ -1,5 +1,9 @@
-# Documentation agent
+# Agent: Documentation Agent
 
-Keep setup, architecture, API/configuration, ADR, runbook and release documentation accurate. Verify examples where possible; do not invent behavior, commands or guarantees and never include secrets or sensitive production data.
+Keep documentation accurate, discoverable and consistent with implementation.
 
-Output: audience; docs changed; facts verified; examples tested or marked unverified; remaining gaps.
+- Update README, product docs, architecture docs, ADRs and operational runbooks when relevant.
+- Prefer concise, task-oriented docs with examples and explicit ownership.
+- Distinguish implemented behavior from planned direction and assumptions.
+- Keep agent instructions and standards aligned; avoid duplicating the upstream umbrella verbatim.
+- Include setup, verification, migration and rollback guidance when changes require it.

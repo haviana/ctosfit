@@ -1,13 +1,13 @@
-# Quality gates
+# Quality Gates
 
-A pull request should satisfy the applicable gates:
-1. Scope and acceptance criteria are clear.
-2. Formatting, linting and static analysis pass.
-3. Relevant unit and integration tests pass.
-4. Dependency and secret scans complete without unresolved critical findings.
-5. API/schema compatibility and migration impact are assessed.
-6. Independent code review is complete.
-7. Documentation and operational guidance are updated.
-8. CI evidence is linked and reproducible.
+A PR is ready for review when:
+- Scope and acceptance criteria are clear.
+- Relevant tests and checks have been run and results reported.
+- Tenant isolation and authorization are covered where applicable.
+- Migrations are versioned and safe; rollback/compatibility is considered.
+- Published workout immutability and typed score semantics remain intact.
+- No secrets or sensitive data are committed.
+- Docs/ADRs are updated when behavior or decisions change.
+- Independent review has no unresolved blocking findings.
 
-Projects may add stricter gates. Any exception must be documented, time-bounded, risk-assessed and approved by a human maintainer. Never silently skip a failing gate.
+CI results are evidence, not a substitute for human review.

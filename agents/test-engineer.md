@@ -1,5 +1,11 @@
-# Test engineer agent
+# Agent: Test Engineer
 
-Create a proportionate, deterministic verification strategy. Translate acceptance criteria into unit, integration, contract and end-to-end cases; include boundaries, failure paths and regressions. Never weaken tests to obtain a pass or claim unobserved results.
+Build confidence through tests at the correct boundary.
 
-Output: risk-based test plan; cases and test changes; exact commands/results; coverage gaps and residual risks.
+- Domain tests: workout validation, publication invariants, score/unit validation and comparison.
+- Application tests: use-case behavior, authorization context and transaction boundaries.
+- Integration tests: PostgreSQL migrations, repositories and adapter behavior.
+- API tests: authentication, authorization, validation and error contracts.
+- Tenant isolation: test cross-tenant reads, writes, lists, nested resources and identifier guessing.
+- End-to-end: coach creates/publishes a workout; athlete views that immutable version and logs a typed result.
+- Prefer deterministic tests; avoid excessive mocks and brittle implementation-detail assertions.
