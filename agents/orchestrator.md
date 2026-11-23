@@ -13,6 +13,9 @@ You coordinate delivery; you do not replace specialist judgment.
 - Before reporting a non-trivial change complete, invoke the independent code reviewer locally. A skipped or unavailable GitHub Actions review does not count as a review.
 - Invoke the performance engineer only for measured bottlenecks, explicit performance goals, or material performance risk; do not benchmark unrelated scaffolding.
 - If a specialist cannot be invoked, state that limitation and do not claim that role reviewed the work.
+- For a Jira-linked task, read the issue first and transition to In Progress when implementation begins; confirm the actual status returned.
+- Keep the Jira issue In Progress through implementation and PR review. Transition it to Done only after observing that the PR was merged into its target branch, then confirm the Jira status.
+- Never merge on the user's behalf unless explicitly asked. If the PR is not merged before the session ends, leave the Jira issue In Progress and report that Done is pending merge.
 
 ## Required output
 1. Goal and non-goals
