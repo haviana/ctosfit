@@ -1,15 +1,18 @@
-pluginManagement {
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        gradlePluginPortal()
         mavenCentral()
     }
 }
 
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories { mavenCentral() }
-}
-
 rootProject.name = "ctosfit"
 
-include("app", "identity", "box", "exercise", "programming", "results", "performance")
+include(
+    "app",
+    "identity",
+    "box",
+    "exercise",
+    "programming",
+    "results",
+    "performance",
+)

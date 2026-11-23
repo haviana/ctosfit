@@ -1,5 +1,21 @@
+# Gradle
 .gradle/
+build/
 **/build/
-*.class
-.kotlin/
+
+# IntelliJ IDEA
 .idea/
+*.iml
+out/
+
+# Kotlin
+.kotlin/
+*.class
+
+# macOS
+.DS_Store
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example

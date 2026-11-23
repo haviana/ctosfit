@@ -1,22 +1,40 @@
+import org.gradle.api.artifacts.VersionCatalogsExtension
+
 plugins {
-    kotlin("jvm") version "2.4.21" apply false
-    kotlin("plugin.spring") version "2.4.21" apply false
-    id("org.springframework.boot") version "4.2.0" apply false
-    id("io.spring.dependency-management") version "1.1.7" apply false
+    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.kotlin.spring) apply false
+    alias(libs.plugins.spring.boot) apply false
 }
 
-group = "com.ctosfit"
-version = "0.1.0-SNAPSHOT"
+// Resolve the catalog explicitly so it can be reused from subproject configuration.
+val dependencyCatalog = extensions
+    .getByType<VersionCatalogsExtension>()
+    .named("libs")
+
+val springBootBom = dependencyCatalog.findLibrary("spring-boot-dependencies").get()
+val kotlinTest = dependencyCatalog.findLibrary("kotlin-test").get()
+val junitJupiter = dependencyCatalog.findLibrary("junit-jupiter").get()
 
 allprojects {
-    group = rootProject.group
-    version = rootProject.version
+    group = "com.ctosfit"
+    version = providers.gradleProperty("projectVersion").orElse("0.1.0-SNAPSHOT").get()
 }
 
 subprojects {
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        compilerOptions {
-            freeCompilerArgs.addAll("-Xjsr305=strict")
-        }
+    apply(plugin = "org.jetbrains.kotlin.jvm")
+
+    extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension> {
+        jvmToolchain(25)
+    }
+
+    dependencies {
+        // Align test libraries consistently across every module with the Spring Boot BOM.
+        add("testImplementation", platform(springBootBom))
+        add("testImplementation", kotlinTest)
+        add("testImplementation", junitJupiter)
+    }
+
+    tasks.withType<Test>().configureEach {
+        useJUnitPlatform()
     }
 }
