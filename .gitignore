@@ -2,6 +2,8 @@
 .gradle/
 build/
 **/build/
+**/node_modules/
+web/dist/
 
 # IntelliJ IDEA
 .idea/

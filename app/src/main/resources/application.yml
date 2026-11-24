@@ -1,6 +1,19 @@
 spring:
   application:
     name: ctosfit
+  datasource:
+    url: ${CTOSFIT_DATABASE_URL:jdbc:postgresql://localhost:5432/ctosfit}
+    username: ${CTOSFIT_DATABASE_USERNAME:ctosfit}
+    password: ${CTOSFIT_DATABASE_PASSWORD:ctosfit}
+  flyway:
+    enabled: true
+ctosfit:
+  web:
+    allowed-origins: ${CTOSFIT_WEB_ALLOWED_ORIGINS:http://localhost:5173}
+  security:
+    issuer-uri: ${CTOSFIT_SECURITY_ISSUER_URI:}
+    jwk-set-uri: ${CTOSFIT_SECURITY_JWK_SET_URI:}
+    audience: ${CTOSFIT_SECURITY_AUDIENCE:ctosfit-api}
 server:
   shutdown: graceful
 management:

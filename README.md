@@ -14,6 +14,7 @@ The first release is deliberately not a complete gym-management system. Billing,
 - [Architecture overview](docs/architecture/overview.md)
 - [Initial domain model](docs/architecture/domain-model.md)
 - [Discovery and pilot plan](docs/operations/discovery-and-pilot.md)
+- [REST API contract](docs/api/openapi.yaml)
 
 ## Initial technical direction
 
@@ -46,9 +47,10 @@ All plugin and library versions are centralized in [gradle/libs.versions.toml](g
 
 ### Run locally
 
-Requirements: JDK 25 and Gradle 9.7.0.
+Requirements: JDK 25, Gradle 9.7.0 and Docker Compose.
 
 ```bash
+docker compose up -d postgres
 gradle clean test
 gradle :app:bootRun
 ```
@@ -56,6 +58,22 @@ gradle :app:bootRun
 Health endpoint: http://localhost:8080/actuator/health
 
 Build: `gradle build` · Jar: `gradle :app:bootJar`
+
+### Web preview
+
+Requirements: Node.js and npm.
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+The web preview includes a public product landing page and a role-based interactive demo
+for box owners, coaches and athletes. Demo actions use fictional sample data in the
+browser and do not call a live API or access tenant data.
+
+Configure the authenticated OIDC workspace using the [web app setup guide](web/README.md).
 
 ### Architecture
 
@@ -84,4 +102,4 @@ This repository consumes a curated, Ctosfit-adapted snapshot of the agents, skil
 
 ## Current status
 
-The product scope and initial technical foundation are documented. Product discovery and validation should precede committing to the full MVP implementation.
+The app now has box onboarding and owner-managed memberships, JWT-authenticated tenant-scoped REST and PostgreSQL persistence for exercises, workout drafts/publications and typed results, and a responsive authenticated browser workspace. The public landing page and sample-data demo remain isolated from live tenant data. Memberships currently require an existing identity-provider user ID; invitation delivery, broader verified PostgreSQL tenant-isolation coverage, and a demonstrated backup restore remain before full MVP acceptance.
