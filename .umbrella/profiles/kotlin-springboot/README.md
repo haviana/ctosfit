@@ -1,0 +1,3 @@
+# Kotlin / Spring Boot profile
+
+Use compatible supported Java LTS, Kotlin and Spring versions. Prefer immutable data, explicit nullability and constructor injection. Keep domain logic independent of Spring where practical. Define transaction boundaries deliberately, validate request models, version database migrations, test persistence with integration tests, configure detekt/ktlint consistently and document exact Gradle tasks and local infrastructure prerequisites.

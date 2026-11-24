@@ -10,6 +10,7 @@ out/
 
 # Kotlin
 .kotlin/
+*.class
 
 # macOS
 .DS_Store
