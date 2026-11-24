@@ -1,6 +1,7 @@
 package com.ctosfit.box.application.service
 
 import com.ctosfit.box.application.port.out.ActiveMembershipLookup
+import com.ctosfit.box.application.port.out.AuthenticatedUserProvider
 import com.ctosfit.box.domain.AuthenticatedUserId
 import com.ctosfit.box.domain.BoxId
 import kotlin.test.Test
@@ -13,11 +14,9 @@ class ResolveTenantContextServiceTest {
 
     @Test
     fun `resolves tenant context only for an active membership`() {
-        val service = ResolveTenantContextService(ActiveMembershipLookup { user, box ->
-            user == userId && box == boxId
-        })
+        val service = service { user, box -> user == userId && box == boxId }
 
-        val context = service.resolve(userId, boxId)
+        val context = service.resolve(boxId)
 
         assertEquals(boxId, context.boxId)
         assertEquals(userId, context.userId)
@@ -25,10 +24,10 @@ class ResolveTenantContextServiceTest {
 
     @Test
     fun `rejects a request-selected box without membership`() {
-        val service = ResolveTenantContextService(ActiveMembershipLookup { _, _ -> false })
+        val service = service { _, _ -> false }
 
         assertFailsWith<TenantAccessDeniedException> {
-            service.resolve(userId, boxId)
+            service.resolve(boxId)
         }
     }
 
@@ -37,4 +36,10 @@ class ResolveTenantContextServiceTest {
         assertFailsWith<IllegalArgumentException> { BoxId(" ") }
         assertFailsWith<IllegalArgumentException> { AuthenticatedUserId("") }
     }
+
+    private fun service(isActiveMember: (AuthenticatedUserId, BoxId) -> Boolean) =
+        ResolveTenantContextService(
+            AuthenticatedUserProvider { userId },
+            ActiveMembershipLookup(isActiveMember),
+        )
 }

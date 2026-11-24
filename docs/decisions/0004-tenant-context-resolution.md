@@ -12,11 +12,12 @@ on each other's repositories or implementation details.
 
 ## Decision
 
-The box module exposes a use case that takes the authenticated user ID and selected
-box ID, asks an `ActiveMembershipLookup` port to verify active membership, then returns
-a `TenantContext`. The tenant context can only be constructed inside the box module's
+The box module exposes a use case that takes the selected box ID, obtains the current
+user through an `AuthenticatedUserProvider` backed by trusted authentication context,
+asks an `ActiveMembershipLookup` port to verify active membership, then returns a
+`TenantContext`. The tenant context can only be constructed inside the box module's
 authorization flow. The application composition root is responsible for connecting
-the lookup port to identity's membership capability.
+both ports to authentication and identity's membership capability.
 
 All tenant-owned use cases and repository operations must receive this resolved context
 and scope their reads and writes to its box ID. New modules must not accept raw request
