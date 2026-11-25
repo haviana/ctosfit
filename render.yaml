@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: ctosfit-api-dev
+    runtime: docker
+    region: frankfurt
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health/readiness
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: CTOSFIT_SECURITY_ISSUER_URI
+        sync: false
+      - key: CTOSFIT_SECURITY_JWK_SET_URI
+        sync: false
+      - key: CTOSFIT_SECURITY_AUDIENCE
+        sync: false
+      - key: CTOSFIT_OIDC_ENABLED
+        value: "false"
+      - key: CTOSFIT_OIDC_ISSUER_URI
+        sync: false
+      - key: CTOSFIT_OIDC_CLIENT_ID
+        sync: false
+      - key: CTOSFIT_OIDC_CLIENT_SECRET
+        sync: false
