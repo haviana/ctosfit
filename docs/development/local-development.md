@@ -7,15 +7,15 @@
 
 Gradle 9.1.0 or later is required to run Gradle on Java 25. Gradle 9.7.0 is selected to stay within the fully supported range documented for Kotlin Gradle Plugin 2.4.21.
 
-The Gradle Wrapper is not included yet. Until it is added, use a locally installed Gradle 9.7.0.
+The repository includes the Gradle Wrapper, pinned to Gradle 9.7.0. No system Gradle installation is needed.
 
 ## Commands
 ```bash
 docker compose up -d postgres
-gradle clean test
-gradle build
-gradle :app:bootRun
-gradle :app:bootJar
+./gradlew clean test
+./gradlew build
+./gradlew :app:bootRun
+./gradlew :app:bootJar
 ```
 
 The app connects to the local PostgreSQL instance and applies versioned Flyway
