@@ -7,9 +7,11 @@ build/
 .idea/
 *.iml
 out/
+!**/application/port/out/
 
 # Kotlin
 .kotlin/
+*.class
 
 # macOS
 .DS_Store

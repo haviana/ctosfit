@@ -13,6 +13,8 @@ The first release is deliberately not a complete gym-management system. Billing,
 - [Product roadmap](docs/product/roadmap.md)
 - [Architecture overview](docs/architecture/overview.md)
 - [Initial domain model](docs/architecture/domain-model.md)
+- [ADR 0002 — AI-assisted development governance](docs/engineering/decisions/0002-ai-assisted-development.md)
+- [AI-assisted development guide](docs/engineering/ai-development.md)
 - [Discovery and pilot plan](docs/operations/discovery-and-pilot.md)
 
 ## Initial technical direction
@@ -26,7 +28,7 @@ The first release is deliberately not a complete gym-management system. Billing,
 
 ## Backend foundation
 
-The backend starts as a Kotlin + Spring Boot **modular monolith** with Hexagonal Architecture inside each business module.
+The backend is a Kotlin + Spring Boot **modular monolith** with Hexagonal Architecture inside each business module.
 
 ### Modules
 
@@ -46,16 +48,16 @@ All plugin and library versions are centralized in [gradle/libs.versions.toml](g
 
 ### Run locally
 
-Requirements: JDK 25 and Gradle 9.7.0.
+Requirements: JDK 25.
 
 ```bash
-gradle clean test
-gradle :app:bootRun
+./gradlew clean test
+./gradlew :app:bootRun
 ```
 
 Health endpoint: http://localhost:8080/actuator/health
 
-Build: `gradle build` · Jar: `gradle :app:bootJar`
+Build: `./gradlew build` · Jar: `./gradlew :app:bootJar`
 
 ### Architecture
 

@@ -61,11 +61,11 @@ Workout-first CrossFit / Cross Training platform. Current foundation: Kotlin/Spr
 3. Define/update port before adapter.
 4. Implement the smallest complete vertical slice.
 5. Add tests and update docs.
-6. Run `gradle clean test` and `gradle build`.
+6. Run `./gradlew clean test` and `./gradlew build`.
 7. Summarize files, decisions, tests and limitations.
 
 ## Commands
-`gradle clean test` · `gradle build` · `gradle :app:bootRun` · `gradle :app:bootJar`
+`./gradlew clean test` · `./gradlew build` · `./gradlew :app:bootRun` · `./gradlew :app:bootJar`
 
 ## Out of scope unless requested
 Microservices, distributed transactions, premature event-driven architecture, authentication-provider integration, database schema and migrations, speculative multi-tenancy enforcement.

@@ -22,7 +22,7 @@ Gradle 9.7.0 is used because it supports running on Java 25 and remains within t
 1. Change the relevant version in `[versions]` in `gradle/libs.versions.toml`.
 2. Keep related plugin and library aliases linked through `version.ref`.
 3. Review compatibility matrices and release notes before upgrading.
-4. Run `gradle clean test build`.
+4. Run `./gradlew clean test build`.
 5. Review dependency changes and commit the catalog and build-script changes together.
 
 ## Spring Boot BOM
