@@ -101,7 +101,7 @@ class WorkoutResultControllerTest {
         score = TimeScore(Duration.ofSeconds(518), TimeOutcome.COMPLETED),
     )
 
-    private class RecordingSubmitUseCase : SubmitWorkoutResult {
+    private inner class RecordingSubmitUseCase : SubmitWorkoutResult {
         var command: SubmitWorkoutResultCommand? = null
 
         override fun submit(command: SubmitWorkoutResultCommand): WorkoutResult {
