@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
@@ -186,9 +187,9 @@ class ExerciseTenantIsolationIntegrationTest @Autowired constructor(
         )
     }
 
-    private fun coach(userId: String) = jwt().jwt { it.subject(userId) }
+    private fun coach(userId: String) = jwt().jwt { it.subject(userId) }.authorities(SimpleGrantedAuthority("COACH"))
 
-    private fun athlete(userId: String) = jwt().jwt { it.subject(userId) }
+    private fun athlete(userId: String) = jwt().jwt { it.subject(userId) }.authorities(SimpleGrantedAuthority("ATHLETE"))
 
     companion object {
         private const val BOX_HEADER = "X-Box-Id"
