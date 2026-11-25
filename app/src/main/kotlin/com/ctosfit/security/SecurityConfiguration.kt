@@ -80,7 +80,7 @@ class SecurityConfiguration {
 
     @Bean
     fun corsConfigurationSource(
-        @Value("\\${ctosfit.web.allowed-origins:http://localhost:5173}") allowedOrigins: String,
+        @Value("\${ctosfit.web.allowed-origins:http://localhost:5173}") allowedOrigins: String,
     ): CorsConfigurationSource {
         val cors = CorsConfiguration().apply {
             this.allowedOrigins = allowedOrigins.split(',').map(String::trim).filter(String::isNotEmpty)
