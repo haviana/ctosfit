@@ -1,6 +1,16 @@
 spring:
   application:
     name: ctosfit
+ctosfit:
+  security:
+    issuer-uri: ${CTOSFIT_SECURITY_ISSUER_URI:}
+    jwk-set-uri: ${CTOSFIT_SECURITY_JWK_SET_URI:}
+    audience: ${CTOSFIT_SECURITY_AUDIENCE:}
+    oidc:
+      enabled: ${CTOSFIT_OIDC_ENABLED:false}
+      issuer-uri: ${CTOSFIT_OIDC_ISSUER_URI:}
+      client-id: ${CTOSFIT_OIDC_CLIENT_ID:}
+      client-secret: ${CTOSFIT_OIDC_CLIENT_SECRET:}
 server:
   shutdown: graceful
 management:
