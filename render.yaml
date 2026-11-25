@@ -15,10 +15,26 @@ services:
     healthCheckPath: /actuator/health/readiness
     autoDeployTrigger: checksPass
     envVars:
-      - key: CTOSFIT_DATABASE_URL
+      - key: CTOSFIT_DATABASE_HOST
         fromDatabase:
           name: ctosfit-db-dev
-          property: connectionString
+          property: host
+      - key: CTOSFIT_DATABASE_PORT
+        fromDatabase:
+          name: ctosfit-db-dev
+          property: port
+      - key: CTOSFIT_DATABASE_NAME
+        fromDatabase:
+          name: ctosfit-db-dev
+          property: database
+      - key: CTOSFIT_DATABASE_USERNAME
+        fromDatabase:
+          name: ctosfit-db-dev
+          property: user
+      - key: CTOSFIT_DATABASE_PASSWORD
+        fromDatabase:
+          name: ctosfit-db-dev
+          property: password
       - key: CTOSFIT_SECURITY_ISSUER_URI
         sync: false
       - key: CTOSFIT_SECURITY_JWK_SET_URI
