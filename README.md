@@ -47,17 +47,17 @@ All plugin and library versions are centralized in [gradle/libs.versions.toml](g
 
 ### Run locally
 
-Requirements: JDK 25, Gradle 9.7.0 and Docker Compose.
+Requirements: JDK 25, Gradle Wrapper 9.7.0 and Docker Compose.
 
 ```bash
 docker compose up -d postgres
-gradle clean test
-gradle :app:bootRun
+./gradlew clean test
+./gradlew :app:bootRun
 ```
 
 Health endpoint: http://localhost:8080/actuator/health
 
-Build: `gradle build` · Jar: `gradle :app:bootJar`
+Build: `./gradlew build` · Jar: `./gradlew :app:bootJar`
 
 ### Web preview
 
