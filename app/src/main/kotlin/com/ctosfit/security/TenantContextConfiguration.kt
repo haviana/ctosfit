@@ -9,13 +9,13 @@ import com.ctosfit.box.application.service.ResolveTenantContextService
 import com.ctosfit.box.application.service.CreateBoxService
 import com.ctosfit.box.domain.AuthenticatedUserId
 import com.ctosfit.box.domain.BoxRole
-import com.ctosfit.exercise.adapter.out.JdbcExerciseRepository
+import com.ctosfit.exercise.adapter.`out`.JdbcExerciseRepository
 import com.ctosfit.exercise.application.port.`in`.ManageExercises
 import com.ctosfit.exercise.application.port.`out`.ExerciseRepository
 import com.ctosfit.exercise.application.port.`out`.CurrentTenantProvider
 import com.ctosfit.exercise.application.service.ManageExercisesService
 import com.ctosfit.exercise.domain.TenantId
-import com.ctosfit.identity.adapter.out.JdbcMembershipRepository
+import com.ctosfit.identity.adapter.`out`.JdbcMembershipRepository
 import com.ctosfit.identity.application.port.`in`.FindActiveMembership
 import com.ctosfit.identity.application.port.`out`.MembershipRepository
 import com.ctosfit.identity.application.port.`out`.ManageMembershipsRepository
@@ -35,7 +35,7 @@ import com.ctosfit.programming.application.port.`in`.GetScheduledWorkoutSnapshot
 import com.ctosfit.programming.application.port.`in`.PublishWorkout
 import com.ctosfit.programming.application.port.`out`.WorkoutDraftRepository
 import com.ctosfit.programming.application.port.`out`.WorkoutPublicationRepository
-import com.ctosfit.programming.adapter.out.JdbcWorkoutRepositories
+import com.ctosfit.programming.adapter.`out`.JdbcWorkoutRepositories
 import com.ctosfit.programming.application.service.CreateWorkoutDraftService
 import com.ctosfit.programming.application.service.EditWorkoutDraftService
 import com.ctosfit.programming.application.service.GetPublishedWorkoutSnapshotService
@@ -54,7 +54,7 @@ import com.ctosfit.results.application.port.`in`.SubmitWorkoutResult
 import com.ctosfit.results.application.port.`out`.PublishedWorkoutDetails
 import com.ctosfit.results.application.port.`out`.PublishedWorkoutLookup
 import com.ctosfit.results.application.port.`out`.WorkoutResultRepository
-import com.ctosfit.results.adapter.out.JdbcWorkoutResultRepository
+import com.ctosfit.results.adapter.`out`.JdbcWorkoutResultRepository
 import com.ctosfit.results.application.service.GetMyWorkoutResultsService
 import com.ctosfit.results.application.service.GetBoxWorkoutResultsService
 import com.ctosfit.results.application.service.GetMyPersonalBestsService
