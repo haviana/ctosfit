@@ -25,7 +25,7 @@ class CreateWorkoutDraftServiceTest {
             },
         )
 
-        val draft = service.create("Monday WOD")
+        val draft = service.create("Monday WOD", emptyList())
 
         assertEquals(BoxId("verified-box"), draft.boxId)
         assertEquals(draft, saved)
