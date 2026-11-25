@@ -23,6 +23,9 @@ import org.springframework.security.oauth2.jwt.JwtValidators
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper
 
 @Configuration
@@ -35,6 +38,7 @@ class SecurityConfiguration {
     ): SecurityFilterChain {
         http
             .securityMatcher("/api/**")
+            .cors { }
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests {
@@ -72,6 +76,19 @@ class SecurityConfiguration {
             }
         }
         return http.build()
+    }
+
+    @Bean
+    fun corsConfigurationSource(
+        @Value("\\${ctosfit.web.allowed-origins:http://localhost:5173}") allowedOrigins: String,
+    ): CorsConfigurationSource {
+        val cors = CorsConfiguration().apply {
+            this.allowedOrigins = allowedOrigins.split(',').map(String::trim).filter(String::isNotEmpty)
+            allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+            allowedHeaders = listOf("Authorization", "Content-Type", "X-Box-Id")
+            maxAge = 3_600L
+        }
+        return UrlBasedCorsConfigurationSource().apply { registerCorsConfiguration("/api/**", cors) }
     }
 
     @Bean
