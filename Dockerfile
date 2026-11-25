@@ -8,6 +8,9 @@ RUN ./gradlew :app:bootJar --no-daemon --max-workers=1 \
 
 FROM eclipse-temurin:25-jre
 
+RUN apt-get update \
+    && apt-get install --no-install-recommends --yes curl \
+    && rm -rf /var/lib/apt/lists/*
 RUN useradd --system --uid 10001 --create-home ctosfit
 
 WORKDIR /app
@@ -16,4 +19,5 @@ COPY --from=build /workspace/app/build/libs/ctosfit.jar /app/ctosfit.jar
 ENV JAVA_OPTS=""
 EXPOSE 10000
 USER ctosfit
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 CMD curl --fail --silent "http://127.0.0.1:${PORT:-10000}/actuator/health/readiness" || exit 1
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Dserver.port=${PORT:-10000} -jar /app/ctosfit.jar"]
