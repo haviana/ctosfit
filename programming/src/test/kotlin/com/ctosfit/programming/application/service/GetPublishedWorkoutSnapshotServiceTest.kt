@@ -60,7 +60,7 @@ class GetPublishedWorkoutSnapshotServiceTest {
         assertEquals(boxId, result?.boxId)
         assertEquals(publicationId, result?.publicationId)
         assertEquals(setOf("back-squat", "row"), result?.metricIds)
-        assertEquals(setOf("RX"), result?.prescriptionIds)
+        assertEquals(setOf("RX", "BEGINNER"), result?.prescriptionIds)
         assertSame(publication, result?.snapshot)
     }
 
