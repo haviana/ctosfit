@@ -20,4 +20,4 @@ ENV JAVA_OPTS=""
 EXPOSE 10000
 USER ctosfit
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 CMD curl --fail --silent "http://127.0.0.1:${PORT:-10000}/actuator/health/readiness" || exit 1
-ENTRYPOINT ["sh", "-c", "if [ -n \"${CTOSFIT_DATABASE_URL:-}\" ] && [ \"${CTOSFIT_DATABASE_URL#jdbc:}\" = \"$CTOSFIT_DATABASE_URL\" ]; then export CTOSFIT_DATABASE_URL=\"jdbc:${CTOSFIT_DATABASE_URL}\"; fi; exec java $JAVA_OPTS -Dserver.port=${PORT:-10000} -jar /app/ctosfit.jar"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Dserver.port=${PORT:-10000} -jar /app/ctosfit.jar"]
