@@ -26,7 +26,7 @@ class WorkoutScoreComparisonTest {
             WorkoutScoreComparison.bestOf(listOf(ScoredAttempt(MetricId("test"), RepsScore(8)), ScoredAttempt(MetricId("test"), RepsScore(12)))),
         )
         assertEquals(
-            ScoredAttempt(MetricId("test"), RoundsAndRepsScore(10, 2)),
+            ScoredAttempt(MetricId("test"), RoundsAndRepsScore(10, 1)),
             WorkoutScoreComparison.bestOf(
                 listOf(
                     ScoredAttempt(MetricId("test"), RoundsAndRepsScore(10, 1)),
