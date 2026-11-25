@@ -52,7 +52,7 @@ services:
   - type: web
     name: ctosfit-web-dev
     runtime: static
-    buildCommand: npm ci --prefix web && npm run build --prefix web
+    buildCommand: cd web && npm ci && npm run build
     staticPublishPath: web/dist
     autoDeployTrigger: checksPass
     routes:
