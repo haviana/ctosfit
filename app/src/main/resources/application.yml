@@ -2,7 +2,7 @@ spring:
   application:
     name: ctosfit
   datasource:
-    url: ${CTOSFIT_DATABASE_URL:jdbc:postgresql://localhost:5432/ctosfit}
+    url: jdbc:postgresql://${CTOSFIT_DATABASE_HOST:localhost}:${CTOSFIT_DATABASE_PORT:5432}/${CTOSFIT_DATABASE_NAME:ctosfit}
     username: ${CTOSFIT_DATABASE_USERNAME:ctosfit}
     password: ${CTOSFIT_DATABASE_PASSWORD:ctosfit}
   flyway:
