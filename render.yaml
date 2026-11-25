@@ -49,3 +49,22 @@ services:
         sync: false
       - key: CTOSFIT_OIDC_CLIENT_SECRET
         sync: false
+  - type: web
+    name: ctosfit-web-dev
+    runtime: static
+    buildCommand: npm ci --prefix web && npm run build --prefix web
+    staticPublishPath: web/dist
+    autoDeployTrigger: checksPass
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://ctosfit-api-dev-jwm1.onrender.com
+      - key: VITE_OIDC_ISSUER_URL
+        sync: false
+      - key: VITE_OIDC_CLIENT_ID
+        sync: false
+      - key: VITE_OIDC_REDIRECT_URI
+        sync: false
