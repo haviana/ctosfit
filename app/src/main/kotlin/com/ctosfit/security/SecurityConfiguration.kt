@@ -62,7 +62,7 @@ class SecurityConfiguration {
         }
 
         val audienceValidator = OAuth2TokenValidator<Jwt> { jwt ->
-            if (audience in jwt.audience) OAuth2TokenValidatorResult.success()
+            if (jwt.audience?.contains(audience) == true) OAuth2TokenValidatorResult.success()
             else OAuth2TokenValidatorResult.failure(
                 OAuth2Error("invalid_token", "The token is not intended for this API", null),
             )
