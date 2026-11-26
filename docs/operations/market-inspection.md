@@ -23,7 +23,7 @@ This playbook is the operating artifact for [WOD-44](https://hugohaviana.atlassi
 
 | Competitor / reference | What to inspect | Evidence rule |
 |---|---|---|
-| Regybox | Positioning, box/coach/athlete workflows, programming and results support, integrations, pricing/packaging, onboarding and retention mechanisms | Use Regybox-owned pages or dated, attributable third-party evidence; label unknowns instead of inferring them |
+| Regybox | Positioning, box/coach/athlete workflows, programming and results support, integrations, pricing/packaging, onboarding and retention mechanisms | Use Regybox-owned pages or dated, attributable third-party evidence; label unknowns instead of inferring them. See the [WOD-9 workflow review](regybox-workflow-review.md) |
 | Other CrossFit / functional-fitness platforms | Same dimensions as Regybox, plus affiliate/community differentiation | Compare like-for-like workflows and record the date of each observation |
 | CrossFit ecosystem | Affiliate model, Open/benchmark participation, education, community and official product direction | Prefer official CrossFit sources; use secondary reporting only as a clearly labelled signal |
 | Broader fitness market | Community retention, mobile/wearables, inclusive programming, longevity and event participation | Prefer primary research or named industry reports with methodology |
