@@ -27,6 +27,8 @@ box IDs as authorization context.
 
 - A request-selected box is rejected unless active membership is verified.
 - The box module has no dependency on the identity module.
-- The current repository has no authentication adapter, membership store, or
-  tenant-owned persistence yet. Those integrations and PostgreSQL cross-tenant tests
-  must be added with their owning implementation stories.
+- The app currently resolves JWT subjects to active memberships stored in PostgreSQL;
+  the first exercise API uses this verified context for every repository operation.
+- Other tenant-owned endpoints must use the same context flow and box-scoped storage.
+- PostgreSQL integration coverage currently proves exercise list and mutation isolation;
+  broader workout, result, and membership-administration coverage remains required.
