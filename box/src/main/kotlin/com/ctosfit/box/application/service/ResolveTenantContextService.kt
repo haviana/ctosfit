@@ -12,9 +12,8 @@ class ResolveTenantContextService(
 ) : ResolveTenantContext {
     override fun resolve(selectedBoxId: BoxId): TenantContext {
         val userId = authenticatedUserProvider.currentUserId()
-        if (!activeMembershipLookup.isActiveMember(userId, selectedBoxId)) {
-            throw TenantAccessDeniedException()
-        }
-        return TenantContext.authorized(selectedBoxId, userId)
+        val role = activeMembershipLookup.findActiveRole(userId, selectedBoxId)
+            ?: throw TenantAccessDeniedException()
+        return TenantContext.authorized(selectedBoxId, userId, role)
     }
 }

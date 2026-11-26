@@ -19,11 +19,13 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.context.ActiveProfiles
 import java.time.Instant
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ResponseStatus
 
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 @SpringBootTest(
     properties = [
         "ctosfit.security.oidc.enabled=true",

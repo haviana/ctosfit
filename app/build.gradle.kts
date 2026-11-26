@@ -16,6 +16,9 @@ dependencies {
     implementation(project(":performance"))
 
     implementation(libs.spring.boot.starter.web)
+    implementation(libs.spring.boot.starter.validation)
+    implementation(libs.spring.boot.starter.jdbc)
+    implementation(libs.spring.boot.starter.flyway)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.oauth2.client)
@@ -23,9 +26,16 @@ dependencies {
     implementation(libs.jackson.module.kotlin)
     implementation(libs.kotlin.reflect)
 
+    implementation(libs.flyway.core)
+    implementation(libs.flyway.database.postgresql)
+    runtimeOnly(libs.postgresql)
+
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.boot.starter.webmvc.test)
     testImplementation(libs.spring.boot.starter.security.test)
+    testImplementation(libs.h2)
+    testImplementation(libs.testcontainers.junit.jupiter)
+    testImplementation(libs.testcontainers.postgresql)
 }
 
 tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {

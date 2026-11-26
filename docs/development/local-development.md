@@ -9,10 +9,12 @@ The repository includes the Gradle Wrapper, pinned to Gradle 9.7.0. No system Gr
 ```bash
 ./gradlew clean test
 ./gradlew build
-./gradlew :app:bootRun
+SPRING_PROFILES_ACTIVE=local ./gradlew :app:bootRun
 ./gradlew :app:bootJar
 ```
 
 Health endpoint: http://localhost:8080/actuator/health
+
+The `local` profile loads `app/src/main/resources/application-local.properties` and uses the PostgreSQL instance from `docker-compose.yml`.
 
 Import as a Gradle project and select JDK 25 as the Gradle JVM and project toolchain.

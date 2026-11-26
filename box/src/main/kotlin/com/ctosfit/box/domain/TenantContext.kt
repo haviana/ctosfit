@@ -4,9 +4,10 @@ package com.ctosfit.box.domain
 class TenantContext private constructor(
     val boxId: BoxId,
     val userId: AuthenticatedUserId,
+    val role: BoxRole,
 ) {
     companion object {
-        internal fun authorized(boxId: BoxId, userId: AuthenticatedUserId): TenantContext =
-            TenantContext(boxId, userId)
+        internal fun authorized(boxId: BoxId, userId: AuthenticatedUserId, role: BoxRole): TenantContext =
+            TenantContext(boxId, userId, role)
     }
 }

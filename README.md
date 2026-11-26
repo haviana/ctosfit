@@ -16,6 +16,7 @@ The first release is deliberately not a complete gym-management system. Billing,
 - [ADR 0002 — AI-assisted development governance](docs/engineering/decisions/0002-ai-assisted-development.md)
 - [AI-assisted development guide](docs/engineering/ai-development.md)
 - [Discovery and pilot plan](docs/operations/discovery-and-pilot.md)
+- [CrossFit market inspection](docs/operations/market-inspection.md)
 - [Render development deployment](docs/operations/render-dev.md)
 
 ## Initial technical direction
