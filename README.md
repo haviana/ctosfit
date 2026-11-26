@@ -14,6 +14,7 @@ The first release is deliberately not a complete gym-management system. Billing,
 - [Architecture overview](docs/architecture/overview.md)
 - [Initial domain model](docs/architecture/domain-model.md)
 - [Discovery and pilot plan](docs/operations/discovery-and-pilot.md)
+- [CrossFit market inspection](docs/operations/market-inspection.md)
 - [Render development deployment](docs/operations/render-dev.md)
 - [REST API contract](docs/api/openapi.yaml)
 

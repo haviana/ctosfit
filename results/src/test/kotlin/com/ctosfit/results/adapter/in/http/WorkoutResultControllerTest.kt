@@ -110,7 +110,7 @@ class WorkoutResultControllerTest {
         }
     }
 
-    private class RecordingHistoryUseCase(
+    private inner class RecordingHistoryUseCase(
         private val results: List<WorkoutResult>,
     ) : GetMyWorkoutResults {
         override fun get(): List<WorkoutResult> = results

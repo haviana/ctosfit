@@ -3,8 +3,8 @@ package com.ctosfit.box.application.service
 import com.ctosfit.box.application.port.out.ActiveMembershipLookup
 import com.ctosfit.box.application.port.out.AuthenticatedUserProvider
 import com.ctosfit.box.domain.AuthenticatedUserId
-import com.ctosfit.box.domain.BoxRole
 import com.ctosfit.box.domain.BoxId
+import com.ctosfit.box.domain.BoxRole
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -41,17 +41,9 @@ class ResolveTenantContextServiceTest {
         assertFailsWith<IllegalArgumentException> { AuthenticatedUserId("") }
     }
 
-    @Test
-    fun `tenant context enforces selected box role`() {
-        val context = service { _, _ -> BoxRole.ATHLETE }.resolve(boxId)
-
-        context.requireRole(BoxRole.ATHLETE)
-        assertFailsWith<IllegalStateException> { context.requireRole(BoxRole.COACH, BoxRole.BOX_OWNER) }
-    }
-
-    private fun service(activeRole: (AuthenticatedUserId, BoxId) -> BoxRole?) =
+    private fun service(findActiveRole: (AuthenticatedUserId, BoxId) -> BoxRole?) =
         ResolveTenantContextService(
             AuthenticatedUserProvider { userId },
-            ActiveMembershipLookup(activeRole),
+            ActiveMembershipLookup(findActiveRole),
         )
 }

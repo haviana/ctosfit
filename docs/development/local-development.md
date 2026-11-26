@@ -27,4 +27,6 @@ Configure `CTOSFIT_SECURITY_ISSUER_URI`, `CTOSFIT_SECURITY_JWK_SET_URI`, and `CT
 
 Health endpoint: http://localhost:8080/actuator/health
 
+The `local` profile loads `app/src/main/resources/application-local.properties` and uses the PostgreSQL instance from `docker-compose.yml`.
+
 Import as a Gradle project and select JDK 25 as the Gradle JVM and project toolchain.

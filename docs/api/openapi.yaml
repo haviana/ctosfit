@@ -86,6 +86,36 @@ paths:
         '403': { description: Active owner membership required or self-deactivation denied }
         '404': { description: Membership not found in this box }
         '409': { description: Box must retain at least one active owner }
+  /api/box-owner/invitations:
+    post:
+      summary: Create a single-use invitation token for a coach or athlete
+      parameters: [{ $ref: '#/components/parameters/SelectedBox' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateInvitation' }
+      responses:
+        '201':
+          description: Invitation created; the token is returned once for delivery to the invitee
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Invitation' }
+        '403': { description: Active box owner membership required }
+  /api/invitations/accept:
+    post:
+      summary: Accept an invitation as the authenticated identity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties: { token: { type: string } }
+      responses:
+        '200': { description: Membership activated }
+        '404': { description: Invalid, expired or already accepted invitation }
   /api/coaches/exercises:
     get:
       summary: Search exercises in the selected box
@@ -414,6 +444,21 @@ components:
       properties:
         userId: { type: string, minLength: 1, maxLength: 255 }
         role: { $ref: '#/components/schemas/BoxRole' }
+    CreateInvitation:
+      type: object
+      required: [email, role]
+      properties:
+        email: { type: string, format: email }
+        role: { type: string, enum: [COACH, ATHLETE] }
+    Invitation:
+      type: object
+      required: [id, email, role, expiresAt, token]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { type: string, enum: [COACH, ATHLETE] }
+        expiresAt: { type: string, format: date-time }
+        token: { type: string, writeOnly: true }
     Membership:
       type: object
       required: [id, userId, boxId, role, status]

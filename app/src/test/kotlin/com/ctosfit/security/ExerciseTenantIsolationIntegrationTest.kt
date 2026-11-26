@@ -4,11 +4,11 @@ import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt
+import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -18,6 +18,9 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import org.springframework.test.web.servlet.setup.DefaultMockMvcBuilder
+import org.springframework.web.context.WebApplicationContext
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import org.testcontainers.containers.PostgreSQLContainer
@@ -26,11 +29,11 @@ import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
 @SpringBootTest
-@AutoConfigureMockMvc
 class ExerciseTenantIsolationIntegrationTest @Autowired constructor(
-    private val mockMvc: MockMvc,
+    context: WebApplicationContext,
     private val jdbcTemplate: JdbcTemplate,
 ) {
+    private val mockMvc: MockMvc = MockMvcBuilders.webAppContextSetup(context).apply<DefaultMockMvcBuilder>(springSecurity()).build()
     @BeforeEach
     fun setUp() {
         jdbcTemplate.update("TRUNCATE TABLE exercise_equipment, exercises, box_memberships, boxes CASCADE")
@@ -141,6 +144,12 @@ class ExerciseTenantIsolationIntegrationTest @Autowired constructor(
         assertContains(publishedAfterEdit, "\"title\":\"Fran\"")
         assertEquals(false, publishedAfterEdit.contains("Fran revised"))
 
+        mockMvc.perform(
+            get("/api/athletes/publications/{id}", publicationId)
+                .with(athlete(USER_ATHLETE))
+                .header(BOX_HEADER, BOX_B.toString()),
+        ).andExpect(status().isForbidden)
+
         val resultResponse = mockMvc.perform(
             post("/api/athletes/results")
                 .with(athlete(USER_ATHLETE))
@@ -173,6 +182,13 @@ class ExerciseTenantIsolationIntegrationTest @Autowired constructor(
                 .header(BOX_HEADER, BOX_A.toString()),
         ).andExpect(status().isOk).andReturn().response.contentAsString
         assertContains(coachResults, "\"athleteId\":\"$USER_ATHLETE\"")
+
+        val otherBoxResults = mockMvc.perform(
+            get("/api/coaches/results")
+                .with(coach(USER_A))
+                .header(BOX_HEADER, BOX_B.toString()),
+        ).andExpect(status().isOk).andReturn().response.contentAsString
+        assertEquals("[]", otherBoxResults)
     }
 
     private fun extractId(json: String): String = Regex(""""id":"([^"]+)"""").find(json)!!.groupValues[1]
@@ -187,9 +203,13 @@ class ExerciseTenantIsolationIntegrationTest @Autowired constructor(
         )
     }
 
-    private fun coach(userId: String) = jwt().jwt { it.subject(userId) }.authorities(SimpleGrantedAuthority("COACH"))
+    private fun coach(userId: String) = jwt()
+        .jwt { it.subject(userId) }
+        .authorities(SimpleGrantedAuthority("COACH"))
 
-    private fun athlete(userId: String) = jwt().jwt { it.subject(userId) }.authorities(SimpleGrantedAuthority("ATHLETE"))
+    private fun athlete(userId: String) = jwt()
+        .jwt { it.subject(userId) }
+        .authorities(SimpleGrantedAuthority("ATHLETE"))
 
     companion object {
         private const val BOX_HEADER = "X-Box-Id"

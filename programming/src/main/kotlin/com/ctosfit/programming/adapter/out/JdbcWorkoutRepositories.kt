@@ -239,7 +239,6 @@ class JdbcWorkoutRepositories(
 
     private fun uuid(value: String): UUID = UUID.fromString(value)
 }
-
 private data class WorkoutDocument(
     val schemaVersion: Int,
     val title: String,
@@ -253,7 +252,6 @@ private data class WorkoutDocument(
         const val CURRENT_SCHEMA_VERSION = 1
     }
 }
-
 private data class WorkoutBlockDocument(
     val id: String,
     val title: String,
@@ -378,4 +376,3 @@ private data class MovementTargetDocument(
         }
     }
 }
-

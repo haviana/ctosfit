@@ -6,6 +6,7 @@ Agents are role prompts and review responsibilities, not autonomous authorities.
 |---|---|
 | Orchestrator | Scope, plan, delegate and enforce approval gates |
 | Product analyst | Clarify user value, MVP scope and acceptance criteria |
+| Product owner orchestrator | Scan Jira boards, surface delivery risks and prepare status questions |
 | Software architect | Boundaries, domain model, ADRs and trade-offs |
 | Backend engineer | Kotlin/Spring application and domain implementation |
 | Frontend engineer | React/TypeScript user experience and API integration |

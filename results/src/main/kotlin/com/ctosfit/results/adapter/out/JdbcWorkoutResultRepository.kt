@@ -216,4 +216,3 @@ class JdbcWorkoutResultRepository(
         val completionStatus: String? = null,
     )
 }
-
