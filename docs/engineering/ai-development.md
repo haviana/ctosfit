@@ -26,23 +26,37 @@ associated PR is merged. Missing credentials, unavailable transitions and
 unconfirmed status results remain explicit blockers.
 
 The event-driven implementation is `.github/workflows/jira-workflow.yml`. It
-uses PR opened/reopened events for **In Progress** and merged PR events for
-**Done**. Configure the repository secrets `JIRA_BASE_URL`, `JIRA_EMAIL` and
-`JIRA_API_TOKEN` before enabling it. Jira keys are read from the PR title, body
-or head branch, and no transition is attempted when no unambiguous key is
-found. After a merged PR, it can claim the next issue returned by the optional
-repository variable `JIRA_BACKLOG_JQL` and move that issue to **In Progress**.
-The JQL must define the backlog ordering explicitly, for example:
-`project = CTF AND statusCategory = "To Do" ORDER BY Rank ASC`. Claiming a Jira
-issue does not start arbitrary code execution; a Codex task must use that issue
-key as its next task input. With `OPENAI_API_KEY` configured, the workflow now
-also fetches the claimed issue, runs the pinned OpenAI Codex GitHub Action in the
-workspace permission profile, and opens a new PR from the generated changes.
-The generated PR still requires human review and merge.
-Set `CODEX_AUTOMATION_TOKEN` to a repository or organization token with
-contents-write and pull-request-write access if generated PRs must trigger the
-normal downstream GitHub workflows; otherwise the workflow falls back to the
-built-in `GITHUB_TOKEN`.
+verifies the already-claimed **In Progress** state on PR opened/reopened and
+claim-binding synchronize events and verifies **Done** evidence on merged PR events, but only after verifying the
+current PR state, target branch, Jira source status, the authenticated factory
+claim branch/record, and a fresh Jira status readback. Configure the repository secrets `JIRA_BASE_URL`,
+`JIRA_EMAIL` and `JIRA_API_TOKEN`, plus repository variables
+`JIRA_IN_PROGRESS_STATUS_ID` and `JIRA_DONE_STATUS_ID`, before enabling it.
+Jira keys are read from the canonical factory head branch; unclaimed branches,
+terminal mismatches and ineligible source states are
+rejected. This verification workflow does not claim backlog work, check out
+code, launch Codex, open PRs or write Jira state. A closed but unmerged PR is a
+no-op. The factory performs the Jira **In Progress** transition after claiming
+an issue and the **Done** transition only after observing the merged PR; this
+single-writer rule avoids replay races between old PRs and new claims.
+
+Backlog claims belong exclusively to an explicit `factory next` invocation.
+Configure the repository variable `JIRA_BACKLOG_JQL` with deterministic ordering,
+for example `project = WOD AND labels = factory AND statusCategory = "To Do"
+ORDER BY Rank ASC`. The factory must verify project `WOD`, the exact `factory`
+label and an eligible To Do status, then atomically reserve the persistent
+`codex/factory-lock/<ISSUE-KEY>` branch, create the implementation
+`codex/factory/<ISSUE-KEY>` branch and create the matching
+`.codex/factory-claims/<ISSUE-KEY>.json` record before transitioning Jira.
+After opening the PR, the factory updates both claim records with that PR number
+before merge. The lock branch is retained as the issue-level serialization
+record. Branch-create conflicts, missing claim records and mismatches stop the
+run; the factory must not proceed when another writer owns the issue. PR
+opened/reopened events only verify the already-claimed In Progress state,
+claim-binding commits trigger the same verification, and Done reads the claim
+from the immutable merge commit while checking it is still active. After the
+factory confirms Jira Done, it records completion on the lock with an expected
+blob SHA before a later `factory next` may reuse that issue.
 
 ## Safety and approval
 AI agents may prepare changes and PRs but cannot approve their own work, merge, bypass checks or perform consequential production actions without explicit human approval. GitHub Actions must use least privilege and must not execute untrusted PR code in privileged contexts.

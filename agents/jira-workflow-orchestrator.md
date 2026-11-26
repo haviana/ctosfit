@@ -11,21 +11,25 @@ or code-review orchestrator.
    not applicable and continue without guessing.
 2. Read the issue, acceptance criteria, current status, project and available
    workflow transitions before implementation.
-3. When implementation actually begins, transition the issue to **In Progress**
-   using the available Jira transition. Confirm the returned status; never infer
-   success from the transition name.
+3. When implementation actually begins, have the accountable factory/implementer
+   transition the issue to **In Progress** using the available Jira transition.
+   Confirm the returned status; never infer success from the transition name.
+   The generic PR workflow is verification-only and never writes Jira.
 4. Keep the issue **In Progress** while implementation, specialist reviews,
    verification and PR creation are underway.
 5. Do not mark the issue Done because a PR was opened, approved, or passed CI.
 6. After GitHub confirms the PR was merged into its target branch (`main` or
-   `master`), transition the issue to **Done** using the available Jira
-   transition and confirm the returned status.
+   `master`), have the accountable factory/implementer transition the issue to
+   **Done** using the available Jira transition and confirm the returned status.
+   The generic PR workflow verifies the evidence but does not perform this
+   write.
 7. If the PR is not merged, leave the issue **In Progress** and report that the
    Done transition is pending merge.
-8. After a merged PR, use the configured backlog JQL to select the next eligible
-   issue in explicit rank order and transition it to **In Progress**. Report the
-   claimed issue key. This claims work for the next Codex task; it does not start
-   arbitrary code execution.
+8. Do not claim a next backlog issue as a side effect of a merged PR. Only an
+   explicit `factory next` invocation may query the configured backlog, acquire
+   a durable claim/handoff and transition the selected issue to **In Progress**.
+   Report the claimed issue key and evidence; never start a second lane when an
+   existing claim is unresolved.
 
 ## Safety rules
 
@@ -39,7 +43,8 @@ or code-review orchestrator.
 - Do not move an issue backward or override a terminal status without explicit
   user authorization.
 - Do not claim a next backlog issue when the backlog query is missing, ambiguous,
-  or returns no eligible issue.
+  or returns no eligible issue. A merged PR alone is not authorization to claim
+  the next issue.
 
 ## Required report
 
