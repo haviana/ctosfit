@@ -1,0 +1,159 @@
+name: Jira workflow automation
+
+on:
+  pull_request:
+    types: [opened, reopened, closed]
+  workflow_dispatch:
+    inputs:
+      pull_number:
+        description: Pull request number to process
+        required: true
+        type: number
+      target_status:
+        description: Jira target status
+        required: true
+        type: choice
+        options:
+          - In Progress
+          - Done
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: jira-workflow-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  transition:
+    name: Synchronize Jira workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check configuration
+        id: config
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: |
+          if [[ -z "$JIRA_BASE_URL" || -z "$JIRA_EMAIL" || -z "$JIRA_API_TOKEN" ]]; then
+            echo "::notice::Jira automation is not configured; skipping transition."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Transition linked Jira issue
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_ACTION: ${{ github.event.action }}
+          PR_NUMBER: ${{ inputs.pull_number || github.event.pull_request.number }}
+          MANUAL_TARGET_STATUS: ${{ inputs.target_status }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_BACKLOG_JQL: ${{ vars.JIRA_BACKLOG_JQL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            pr_json=$(gh pr view "$PR_NUMBER" --json title,body,headRefName,mergedAt)
+            target_status="$MANUAL_TARGET_STATUS"
+          else
+            pr_json=$(gh pr view "$PR_NUMBER" --json title,body,headRefName,mergedAt)
+            if [[ "$EVENT_ACTION" == "opened" || "$EVENT_ACTION" == "reopened" ]]; then
+              target_status="In Progress"
+            elif [[ "$EVENT_ACTION" == "closed" && "$(jq -r '.mergedAt // empty' <<<"$pr_json")" != "" ]]; then
+              target_status="Done"
+            else
+              echo "No Jira transition required for this pull-request event."
+              exit 0
+            fi
+          fi
+
+          issue_key=$(jq -r '[.title, .body, .headRefName] | join("\n")' <<<"$pr_json" \
+            | grep -Eio '[A-Z][A-Z0-9]+-[0-9]+' | head -n 1 | tr '[:lower:]' '[:upper:]' || true)
+          if [[ -z "$issue_key" ]]; then
+            echo "::notice::No Jira issue key found in PR metadata; skipping transition."
+            exit 0
+          fi
+
+          jira_url="${JIRA_BASE_URL%/}"
+          transitions=$(mktemp)
+          trap 'rm -f "$transitions"' EXIT
+          curl --fail-with-body --silent --show-error \
+            --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+            --header 'Accept: application/json' \
+            "$jira_url/rest/api/3/issue/$issue_key/transitions" > "$transitions"
+
+          transition_id=$(jq -r --arg target "$target_status" \
+            '.transitions[] | select((.to.name | ascii_downcase) == ($target | ascii_downcase)) | .id' \
+            "$transitions" | head -n 1)
+          if [[ -z "$transition_id" || "$transition_id" == "null" ]]; then
+            echo "::error::No Jira transition to '$target_status' is available for $issue_key."
+            exit 1
+          fi
+
+          payload=$(jq -n --arg id "$transition_id" '{transition: {id: $id}}')
+          curl --fail-with-body --silent --show-error \
+            --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --request POST \
+            --data "$payload" \
+            "$jira_url/rest/api/3/issue/$issue_key/transitions" > /dev/null
+
+          echo "Transitioned $issue_key to $target_status for PR #$PR_NUMBER."
+
+          if [[ "$target_status" != "Done" ]]; then
+            exit 0
+          fi
+
+          if [[ -z "${JIRA_BACKLOG_JQL:-}" ]]; then
+            echo "::notice::JIRA_BACKLOG_JQL is not configured; no next backlog issue was claimed."
+            exit 0
+          fi
+
+          search_payload=$(jq -n --arg jql "$JIRA_BACKLOG_JQL" \
+            '{jql: $jql, maxResults: 1, fields: ["summary", "status"]}')
+          next_issue=$(curl --fail-with-body --silent --show-error \
+            --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --request POST \
+            --data "$search_payload" \
+            "$jira_url/rest/api/3/search" \
+            | jq -r '.issues[0].key // empty')
+          if [[ -z "$next_issue" ]]; then
+            echo "No eligible Jira backlog issue was found."
+            exit 0
+          fi
+
+          next_transitions=$(mktemp)
+          trap 'rm -f "$transitions" "$next_transitions"' EXIT
+          curl --fail-with-body --silent --show-error \
+            --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+            --header 'Accept: application/json' \
+            "$jira_url/rest/api/3/issue/$next_issue/transitions" > "$next_transitions"
+          next_transition_id=$(jq -r \
+            '.transitions[] | select((.to.name | ascii_downcase) == "in progress") | .id' \
+            "$next_transitions" | head -n 1)
+          if [[ -z "$next_transition_id" || "$next_transition_id" == "null" ]]; then
+            echo "::error::No Jira transition to 'In Progress' is available for $next_issue."
+            exit 1
+          fi
+
+          next_payload=$(jq -n --arg id "$next_transition_id" '{transition: {id: $id}}')
+          curl --fail-with-body --silent --show-error \
+            --user "$JIRA_EMAIL:$JIRA_API_TOKEN" \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --request POST \
+            --data "$next_payload" \
+            "$jira_url/rest/api/3/issue/$next_issue/transitions" > /dev/null
+
+          echo "Claimed next Jira backlog issue $next_issue as In Progress."
