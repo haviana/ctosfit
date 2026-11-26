@@ -8,6 +8,8 @@ spring:
   flyway:
     enabled: true
 ctosfit:
+  web:
+    allowed-origins: ${CTOSFIT_WEB_ALLOWED_ORIGINS:http://localhost:5173}
   security:
     issuer-uri: ${CTOSFIT_SECURITY_ISSUER_URI:}
     jwk-set-uri: ${CTOSFIT_SECURITY_JWK_SET_URI:}
