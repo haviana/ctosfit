@@ -37,6 +37,34 @@ Read [README.md](README.md), [architecture overview](docs/architecture/overview.
 - Human approval and quality gates are defined in [governance/](governance/).
 - Upstream source and adoption notes are tracked in [UPSTREAM.md](UPSTREAM.md).
 
+### Codex task routing
+When Codex runs a task in this repository, treat the repository orchestrator as
+the entry point. Before planning or editing, read [agents/orchestrator.md](agents/orchestrator.md),
+then read the specialist role files and playbooks selected by the triggers below.
+Do not claim a specialist was invoked unless its role guidance was actually
+consulted and its responsibility is reflected in the task result.
+
+- Every non-trivial change: `agents/orchestrator.md`, the applicable playbook in
+  `skills/`, and `agents/code-reviewer.md` before completion.
+- Feature or behavior change: `agents/product-analyst.md`,
+  `agents/software-architect.md` when boundaries or contracts are affected, and
+  `agents/test-engineer.md` before implementation.
+- Authentication, authorization, tenant scope, secrets or sensitive data:
+  `agents/security-engineer.md` and `skills/secure-tenant-change/SKILL.md` when
+  tenant-owned data is involved.
+- Build, CI/CD, deployment or runtime configuration:
+  `agents/devops-engineer.md`.
+- Frontend work: `agents/frontend-engineer.md`.
+- Backend or persistence work: `agents/backend-engineer.md`.
+- Documentation, architecture or operational guidance: `agents/documentation-agent.md`.
+- Jira-linked implementation work: `agents/jira-workflow-orchestrator.md` and
+  `skills/jira-workflow/SKILL.md`.
+
+For a Codex task, the task prompt supplies the requested outcome and acceptance
+criteria; this file supplies the durable repository workflow. Keep the task
+focused on one accountable implementer, preserve human approval gates, and
+report the exact verification commands and specialist checks performed.
+
 ### Automatic specialist routing
 The orchestrator selects and invokes applicable specialist roles as part of the task workflow; users do not need to name agents explicitly. Apply these triggers:
 

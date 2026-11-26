@@ -6,3 +6,4 @@ Task playbooks that agents can follow. Read the root `AGENTS.md` and relevant st
 - [Secure tenant-scoped change](secure-tenant-change/SKILL.md)
 - [Independent code review](code-review/SKILL.md)
 - [Jira status monitor](jira-status-monitor/SKILL.md)
+- [Jira workflow automation](jira-workflow/SKILL.md)
