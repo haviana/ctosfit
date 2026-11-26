@@ -35,7 +35,14 @@ repository variable `JIRA_BACKLOG_JQL` and move that issue to **In Progress**.
 The JQL must define the backlog ordering explicitly, for example:
 `project = CTF AND statusCategory = "To Do" ORDER BY Rank ASC`. Claiming a Jira
 issue does not start arbitrary code execution; a Codex task must use that issue
-key as its next task input.
+key as its next task input. With `OPENAI_API_KEY` configured, the workflow now
+also fetches the claimed issue, runs the pinned OpenAI Codex GitHub Action in the
+workspace permission profile, and opens a new PR from the generated changes.
+The generated PR still requires human review and merge.
+Set `CODEX_AUTOMATION_TOKEN` to a repository or organization token with
+contents-write and pull-request-write access if generated PRs must trigger the
+normal downstream GitHub workflows; otherwise the workflow falls back to the
+built-in `GITHUB_TOKEN`.
 
 ## Safety and approval
 AI agents may prepare changes and PRs but cannot approve their own work, merge, bypass checks or perform consequential production actions without explicit human approval. GitHub Actions must use least privilege and must not execute untrusted PR code in privileged contexts.
