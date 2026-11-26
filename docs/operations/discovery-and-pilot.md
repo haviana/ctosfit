@@ -1,6 +1,11 @@
 # Discovery and Pilot Plan
 
 ## Discovery objectives
+
+The [RegyBox 2.0 workflow review for WOD-9](regybox-workflow-review.md) is a
+competitive input only; it does not replace coach/athlete interviews or pilot
+evidence.
+
 Validate how coaches plan/publish workouts, where programming and result tracking create friction, which tools are already used, whether historical programming influences decisions, and whether boxes will adopt/pay for a focused workout platform.
 
 ## Interview plan
