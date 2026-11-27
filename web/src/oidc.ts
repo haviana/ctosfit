@@ -6,10 +6,13 @@ export type OidcConfig = {
 };
 
 type OidcMetadata = { issuer: string; authorization_endpoint: string; token_endpoint: string; jwks_uri: string };
-type Session = { accessToken: string; expiresAt: number };
+export type Session = { accessToken: string; expiresAt: number };
+type SignInReturnPath = "/" | "/coach" | "/athlete";
+type OidcFlow = { verifier: string; state: string; nonce: string; returnPath: SignInReturnPath };
 
 const SESSION_KEY = "ctosfit.oidc.session";
 const FLOW_KEY = "ctosfit.oidc.flow";
+let signInCompletion: Promise<boolean> | null = null;
 const base64Url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const randomString = (size = 32) => {
   const bytes = crypto.getRandomValues(new Uint8Array(size));
@@ -21,6 +24,22 @@ const decodeBase64Url = (value: string) => {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
   return Uint8Array.from(atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=")), character => character.charCodeAt(0));
 };
+
+export function resolveSignInReturnPath(pathname: string | null | undefined): SignInReturnPath {
+  const normalized = pathname && pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  return normalized === "/coach" || normalized === "/athlete" ? normalized : "/";
+}
+
+export function readSignInReturnPath(): SignInReturnPath {
+  const stored = sessionStorage.getItem(FLOW_KEY);
+  if (!stored) return "/";
+  try {
+    const flow = JSON.parse(stored) as Partial<OidcFlow>;
+    return resolveSignInReturnPath(flow.returnPath);
+  } catch {
+    return "/";
+  }
+}
 
 export function readOidcConfig(): OidcConfig | null {
   const issuerUrl = import.meta.env.VITE_OIDC_ISSUER_URL?.trim();
@@ -46,7 +65,8 @@ export async function beginSignIn(config: OidcConfig) {
   const verifier = randomString(48);
   const state = randomString();
   const nonce = randomString();
-  sessionStorage.setItem(FLOW_KEY, JSON.stringify({ verifier, state, nonce }));
+  const returnPath = resolveSignInReturnPath(window.location.pathname);
+  sessionStorage.setItem(FLOW_KEY, JSON.stringify({ verifier, state, nonce, returnPath } satisfies OidcFlow));
   const authorize = new URL(metadata.authorization_endpoint);
   authorize.search = new URLSearchParams({
     client_id: config.clientId,
@@ -91,17 +111,15 @@ async function validateIdToken(token: string, config: OidcConfig, metadata: Oidc
   }
 }
 
-export async function finishSignIn(config: OidcConfig): Promise<boolean> {
-  const params = new URLSearchParams(window.location.search);
+async function finishSignIn(config: OidcConfig, params: URLSearchParams): Promise<boolean> {
+  const stored = sessionStorage.getItem(FLOW_KEY);
+  sessionStorage.removeItem(FLOW_KEY);
   if (params.has("error")) throw new Error("The identity provider did not complete sign-in.");
   const code = params.get("code");
   if (!code) return false;
-  const stored = sessionStorage.getItem(FLOW_KEY);
-  sessionStorage.removeItem(FLOW_KEY);
   if (!stored) throw new Error("The sign-in session expired. Please try again.");
-  const flow = JSON.parse(stored) as { verifier: string; state: string; nonce: string };
+  const flow = JSON.parse(stored) as OidcFlow;
   if (params.get("state") !== flow.state) throw new Error("Sign-in state did not match. Please try again.");
-  window.history.replaceState(null, "", window.location.pathname + window.location.hash);
   const metadata = await getMetadata(config);
   const response = await fetch(metadata.token_endpoint, {
     method: "POST",
@@ -120,8 +138,24 @@ export async function finishSignIn(config: OidcConfig): Promise<boolean> {
   await validateIdToken(token.id_token, config, metadata, flow.nonce);
   const session: Session = { accessToken: token.access_token, expiresAt: Date.now() + Math.max(0, token.expires_in ?? 3600) * 1000 };
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  window.history.replaceState(null, "", window.location.pathname + window.location.hash);
   return true;
+}
+
+export function isSignInCallback(config: OidcConfig): boolean {
+  const redirect = new URL(config.redirectUri, window.location.origin);
+  const params = new URLSearchParams(window.location.search);
+  return redirect.origin === window.location.origin && redirect.pathname === window.location.pathname
+    && (params.has("code") || params.has("error"));
+}
+
+export function finishSignInOnce(config: OidcConfig): Promise<boolean> {
+  if (signInCompletion) return signInCompletion;
+  if (!isSignInCallback(config)) return Promise.resolve(false);
+  const returnPath = readSignInReturnPath();
+  const params = new URLSearchParams(window.location.search);
+  window.history.replaceState(null, "", returnPath);
+  signInCompletion = finishSignIn(config, params).finally(() => { signInCompletion = null; });
+  return signInCompletion;
 }
 
 export function readSession(): Session | null {
@@ -141,22 +175,3 @@ export function readSession(): Session | null {
 }
 
 export function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
-
-export async function apiRequest<T>(config: OidcConfig, session: Session, boxId: string, path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${config.apiUrl}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${session.accessToken}`,
-      "X-Box-Id": boxId,
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
-      ...init.headers,
-    },
-  });
-  if (!response.ok) {
-    if (response.status === 401) { clearSession(); throw new Error("Your session expired. Sign in again."); }
-    const body = await response.text();
-    throw new Error(body.slice(0, 260) || `Request failed (${response.status}).`);
-  }
-  if (response.status === 204) return undefined as T;
-  return await response.json() as T;
-}

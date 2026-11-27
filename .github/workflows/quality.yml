@@ -76,32 +76,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Detect frontend project
         id: frontend
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -f package.json ]]; then
-            if [[ ! -f package-lock.json ]]; then
-              echo "package.json exists but package-lock.json is missing; npm ci cannot run reproducibly."
+          if [[ -f web/package.json ]]; then
+            if [[ ! -f web/package-lock.json ]]; then
+              echo "web/package.json exists but web/package-lock.json is missing; npm ci cannot run reproducibly."
               exit 1
             fi
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "No root npm project found; frontend checks will be skipped."
+            echo "No web npm project found; frontend checks will be skipped."
           fi
       - uses: actions/setup-node@v4
         if: steps.frontend.outputs.present == 'true'
         with:
           node-version: '22'
           cache: npm
+          cache-dependency-path: web/package-lock.json
       - name: Install and verify frontend packages
         if: steps.frontend.outputs.present == 'true'
         shell: bash
         run: |
           set -euo pipefail
+          cd web
           npm ci
           npm run --if-present lint
-          npm run --if-present test
-          npm run --if-present build
+          npm test
+          npm run build

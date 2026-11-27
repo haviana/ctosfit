@@ -1,5 +1,8 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
+import AppShell from "./AppShell";
 import AuthenticatedWorkspace from "./AuthenticatedWorkspace";
+import { isSignInCallback, readOidcConfig, readSignInReturnPath } from "./oidc";
+import { resolveRouteForRender } from "./routes";
 
 type DemoRole = "owner" | "coach" | "athlete";
 type Prescription = "RX" | "Scaled" | "Beginner";
@@ -276,10 +279,51 @@ function Footer() {
   return <footer className="site-footer"><a className="wordmark footer-wordmark" href="#top"><span className="brand-mark">C</span><span>ctosfit</span></a><span>Training, in sync.</span><a href="#top">Back to top ↑</a><small>© 2026 Ctosfit · Built for the work.</small></footer>;
 }
 
+function readRoute() {
+  const config = readOidcConfig();
+  const callback = config !== null && isSignInCallback(config);
+  return resolveRouteForRender(window.location.pathname, callback, callback ? readSignInReturnPath() : "/");
+}
+
 export default function App() {
+  const [routeForRender, setRoute] = useState(readRoute);
+  useEffect(() => {
+    const updateRoute = () => setRoute(readRoute());
+    const reloadRestoredPage = (event: PageTransitionEvent) => {
+      if (event.persisted) window.location.reload();
+    };
+    window.addEventListener("popstate", updateRoute);
+    window.addEventListener("pageshow", reloadRestoredPage);
+    return () => {
+      window.removeEventListener("popstate", updateRoute);
+      window.removeEventListener("pageshow", reloadRestoredPage);
+    };
+  }, []);
+  useEffect(() => {
+    const name = routeForRender === "coach" ? "Coach workspace" : routeForRender === "athlete" ? "Athlete workspace" : "training, in sync";
+    document.title = `Ctosfit — ${name}`;
+  }, [routeForRender]);
+
   function openDemo() {
     document.getElementById("demo")?.scrollIntoView({ behavior: "smooth", block: "start" });
     window.history.replaceState(null, "", "#demo");
+  }
+
+  if (routeForRender === "coach" || routeForRender === "athlete") {
+    const role = routeForRender === "coach" ? "COACH" : "ATHLETE";
+    return <AppShell role={routeForRender} title={routeForRender === "coach" ? "Programming" : "Today"}>
+      <AuthenticatedWorkspace key={role} initialRole={role} lockRole />
+    </AppShell>;
+  }
+
+  if (routeForRender === "not-found") {
+    return <main className="not-found-page" id="main-content">
+      <a className="wordmark" href="/"><span className="brand-mark" aria-hidden="true">C</span><span>ctosfit</span></a>
+      <p className="eyebrow"><span className="eyebrow-line" /> ROUTE NOT FOUND</p>
+      <h1>This lane is not on today’s board.</h1>
+      <p>Return home or open a workspace.</p>
+      <div><a className="button button-dark" href="/">Go home</a><a className="button button-outline" href="/coach">Coach workspace</a><a className="button button-outline" href="/athlete">Athlete workspace</a></div>
+    </main>;
   }
 
   return <><a className="skip-link" href="#main-content">Skip to content</a><Header onDemo={openDemo} /><main id="main-content"><Landing onDemo={openDemo} /><Demo /><AuthenticatedWorkspace /></main><Footer /></>;
