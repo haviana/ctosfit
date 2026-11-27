@@ -1,5 +1,6 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { apiRequest, beginSignIn, clearSession, finishSignIn, readOidcConfig, readSession } from "./oidc";
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createApiClient } from "./api-client";
+import { beginSignIn, clearSession, finishSignInOnce, readOidcConfig, readSession } from "./oidc";
 import type { OidcConfig } from "./oidc";
 
 type Session = NonNullable<ReturnType<typeof readSession>>;
@@ -12,40 +13,59 @@ type Publication = { id: string; title: string; workoutId: string; version: numb
 type Result = { id: string; publicationId: string; metricId: string; prescriptionId: string; submittedAt: string; score: { type: string; amount?: number; unit?: string; elapsedSeconds?: number; timeOutcome?: string; reps?: number; rounds?: number; additionalReps?: number; calories?: number; completionStatus?: string } };
 type Best = { metricId: string; prescriptionId: string; resultId: string; achievedAt: string; score: Result["score"] };
 type Membership = { id: string; userId: string; boxId: string; role: Role; status: "ACTIVE" | "INACTIVE" };
-type Role = "BOX_OWNER" | "COACH" | "ATHLETE";
+export type Role = "BOX_OWNER" | "COACH" | "ATHLETE";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const initialConfig = readOidcConfig();
 
 function parseError(error: unknown) { return error instanceof Error ? error.message : "Something went wrong."; }
 
-export default function AuthenticatedWorkspace() {
+export default function AuthenticatedWorkspace({ initialRole = "COACH", lockRole = false }: { initialRole?: Role; lockRole?: boolean }) {
   const [session, setSession] = useState<Session | null>(() => readSession());
   const [config] = useState<OidcConfig | null>(initialConfig);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [boxId, setBoxId] = useState(() => sessionStorage.getItem("ctosfit.selectedBox") ?? "");
-  const [selectedRole, setSelectedRole] = useState<Role>("COACH");
+  const [selectedRole, setSelectedRole] = useState<Role>(initialRole);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const invalidateSession = useCallback(() => {
+    clearSession();
+    setSession(null);
+    setDrafts([]);
+    setBusy(false);
+    setError("Your session expired. Sign in again.");
+  }, []);
+  useEffect(() => setSelectedRole(initialRole), [initialRole]);
   useEffect(() => {
     if (!config) return;
     let cancelled = false;
-    finishSignIn(config).then((finished) => {
+    finishSignInOnce(config).then((finished) => {
       if (finished && !cancelled) { setSession(readSession()); setError(""); }
     }).catch((reason: unknown) => { if (!cancelled) setError(parseError(reason)); });
     return () => { cancelled = true; };
   }, [config]);
-  const token = session?.accessToken;
   useEffect(() => {
-    if (session && session.expiresAt <= Date.now()) { clearSession(); setSession(null); }
-  }, [session]);
+    if (!session) return;
+    const remaining = session.expiresAt - Date.now();
+    if (remaining <= 0) { invalidateSession(); return; }
+    const timeout = window.setTimeout(invalidateSession, remaining);
+    return () => window.clearTimeout(timeout);
+  }, [invalidateSession, session]);
 
   async function signIn() {
     if (!config) return;
     setError("");
     try { await beginSignIn(config); } catch (reason) { setError(parseError(reason)); }
   }
-  function signOut() { clearSession(); setSession(null); setError(""); }
-  function changeBox(value: string) { setBoxId(value); sessionStorage.setItem("ctosfit.selectedBox", value); }
+  function signOut() { clearSession(); setSession(null); setDrafts([]); setBusy(false); setError(""); }
+  function changeBox(value: string) {
+    if (value === boxId) return;
+    setDrafts([]);
+    setError("");
+    setBusy(false);
+    setBoxId(value);
+    sessionStorage.setItem("ctosfit.selectedBox", value);
+  }
 
   async function createBox(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,7 +73,8 @@ export default function AuthenticatedWorkspace() {
     const form = new FormData(event.currentTarget);
     setError(""); setBusy(true);
     try {
-      const created = await apiRequest<{ id: string }>(config, session, "", "/api/boxes", { method: "POST", body: JSON.stringify({ name: String(form.get("boxName")), timeZone: String(form.get("timeZone")) }) });
+      const client = createApiClient({ apiUrl: config.apiUrl, accessToken: session.accessToken, onUnauthorized: invalidateSession });
+      const created = await client.post<{ id: string }>("/api/boxes", { name: String(form.get("boxName")), timeZone: String(form.get("timeZone")) });
       changeBox(created.id); setSelectedRole("BOX_OWNER");
     } catch (reason) { setError(parseError(reason)); }
     finally { setBusy(false); }
@@ -63,53 +84,90 @@ export default function AuthenticatedWorkspace() {
     <div className="connected-heading"><div><p className="eyebrow"><span className="eyebrow-line" /> MEMBER WORKSPACE</p><h2>Your box,<br /><em>in the flow.</em></h2><p>Sign in to work with your box’s live workouts and results. Access is checked against your active membership.</p></div>
       {session && <button className="button button-outline" onClick={signOut}>Sign out</button>}
     </div>
+    {!lockRole && <nav className="workspace-entry-links" aria-label="Open a workspace">
+      <a className="button button-outline" href="/coach">Coach workspace</a>
+      <a className="button button-outline" href="/athlete">Athlete workspace</a>
+    </nav>}
     {!config && <div className="connected-card"><h3>Sign-in needs setup</h3><p>Configure the OIDC issuer and client ID in <code>web/.env.local</code>. See the local development guide.</p></div>}
     {config && !session && <div className="connected-card auth-card"><div><span className="connected-icon">↗</span><h3>Sign in to your box</h3><p>Continue with your organization’s identity provider. The public demo remains available without an account.</p></div><button className="button button-dark" onClick={signIn}>Continue with secure sign-in <span aria-hidden="true">↗</span></button></div>}
     {session && <>
-      <div className="connected-toolbar"><label>Box ID<input value={boxId} onChange={event => changeBox(event.target.value)} placeholder="Paste your box ID" spellCheck={false} /></label><label>Workspace<select value={selectedRole} onChange={event => setSelectedRole(event.target.value as Role)}><option value="BOX_OWNER">Box owner</option><option value="COACH">Coach</option><option value="ATHLETE">Athlete</option></select></label><span className="connected-session">Signed in · token held for this tab</span></div>
-      {!boxId && <div className="connected-onboarding"><div><p className="demo-overline">GET STARTED</p><h3>Create your box</h3><p>Creating a box makes your signed-in account its first owner. Coaches and athletes can instead enter an existing box ID supplied by an owner.</p></div><form className="workspace-form" onSubmit={event => void createBox(event)}><label>Box name<input name="boxName" required maxLength={120} /></label><label>Time zone<input name="timeZone" required defaultValue={Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"} /></label><button className="button button-dark" disabled={busy}>Create box</button></form></div>}
-      {boxId && config && token && <Workspace config={config} session={session} boxId={boxId} role={selectedRole} onError={setError} busy={busy} setBusy={setBusy} />}
+      <div className="connected-toolbar"><label>Box ID<input value={boxId} onChange={event => changeBox(event.target.value)} placeholder="Paste your box ID" spellCheck={false} /></label>{!lockRole && <label>Workspace<select value={selectedRole} onChange={event => setSelectedRole(event.target.value as Role)}><option value="BOX_OWNER">Box owner</option><option value="COACH">Coach</option><option value="ATHLETE">Athlete</option></select></label>}<span className="connected-session">Signed in · token held for this tab</span></div>
+      {!boxId && (lockRole
+        ? <div className="connected-card"><h3>Select your box</h3><p>Enter a box ID above. Your active membership determines which actions the API allows in this workspace.</p></div>
+        : <div className="connected-onboarding"><div><p className="demo-overline">GET STARTED</p><h3>Create your box</h3><p>Creating a box makes your signed-in account its first owner. Coaches and athletes can instead enter an existing box ID supplied by an owner.</p></div><form className="workspace-form" onSubmit={event => void createBox(event)}><label>Box name<input name="boxName" required maxLength={120} /></label><label>Time zone<input name="timeZone" required defaultValue={Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"} /></label><button className="button button-dark" disabled={busy}>Create box</button></form></div>)}
+      {boxId && config && <Workspace key={`${session.expiresAt}:${boxId}:${selectedRole}`} config={config} session={session} boxId={boxId} role={selectedRole} onUnauthorized={invalidateSession} drafts={drafts} onDraftCreated={draft => setDrafts(items => [draft, ...items])} />}
     </>}
     {error && <div className="connected-error" role="alert">{error}</div>}
   </section>;
 }
 
-function Workspace({ config, session, boxId, role, onError, busy, setBusy }: { config: OidcConfig; session: Session; boxId: string; role: Role; onError: (value: string) => void; busy: boolean; setBusy: (value: boolean) => void }) {
+function Workspace({ config, session, boxId, role, onUnauthorized, drafts, onDraftCreated }: {
+  config: OidcConfig; session: Session; boxId: string; role: Role;
+  onUnauthorized: () => void; drafts: Draft[]; onDraftCreated: (draft: Draft) => void;
+}) {
   const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [error, onError] = useState("");
+  const [busy, setBusy] = useState(false);
   const [schedule, setSchedule] = useState<Publication[]>([]);
   const [history, setHistory] = useState<Result[]>([]);
   const [bests, setBests] = useState<Best[]>([]);
   const [date, setDate] = useState(today());
+  const currentDate = useRef(date);
   const [selectedPublication, setSelectedPublication] = useState("");
+  const requestSequence = useRef(0);
+  const mounted = useRef(true);
   const currentPublication = schedule.find(item => item.id === selectedPublication) ?? schedule[0];
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; requestSequence.current += 1; };
+  }, []);
+  const setContextError = useCallback((value: string) => { if (mounted.current) onError(value); }, [onError]);
+  const setContextBusy = useCallback((value: boolean) => { if (mounted.current) setBusy(value); }, [setBusy]);
+  const client = useMemo(() => createApiClient({
+    apiUrl: config.apiUrl, accessToken: session.accessToken, boxId,
+    onUnauthorized: () => { if (mounted.current) onUnauthorized(); },
+  }), [boxId, config.apiUrl, onUnauthorized, session.accessToken]);
   const actions = useMemo(() => ({
-    call: <T,>(path: string, init?: RequestInit) => apiRequest<T>(config, session, boxId, path, init),
-  }), [config, session, boxId]);
+    async call<T>(path: string, init?: RequestInit) {
+      if (!mounted.current) throw new Error("Workspace changed.");
+      return client.request<T>(path, init);
+    },
+  }), [client]);
   async function load() {
-    onError(""); setBusy(true);
+    if (!mounted.current || role === "BOX_OWNER") return;
+    const requestId = ++requestSequence.current;
+    setContextError(""); setContextBusy(true);
     try {
-      if (role === "COACH") setExercises(await actions.call<Exercise[]>("/api/coaches/exercises"));
+      if (role === "COACH") {
+        const loadedExercises = await actions.call<Exercise[]>("/api/coaches/exercises");
+        if (mounted.current && requestId === requestSequence.current) setExercises(loadedExercises);
+      }
       else {
         const [workouts, results, records] = await Promise.all([
-          actions.call<Publication[]>(`/api/athletes/workouts?date=${encodeURIComponent(date)}`),
+          actions.call<Publication[]>(`/api/athletes/workouts?date=${encodeURIComponent(currentDate.current)}`),
           actions.call<Result[]>("/api/athletes/results"),
           actions.call<Best[]>("/api/athletes/personal-bests"),
         ]);
-        setSchedule(workouts); setHistory(results); setBests(records);
+        if (mounted.current && requestId === requestSequence.current) {
+          setSchedule(workouts); setHistory(results); setBests(records);
+        }
       }
-    } catch (reason) { onError(parseError(reason)); }
-    finally { setBusy(false); }
+    } catch (reason) {
+      if (mounted.current && requestId === requestSequence.current) setContextError(parseError(reason));
+    } finally {
+      if (mounted.current && requestId === requestSequence.current) setContextBusy(false);
+    }
   }
   useEffect(() => { void load(); }, [role, boxId, date]);
   async function submit(event: FormEvent<HTMLFormElement>, work: (form: FormData) => Promise<void>) {
-    event.preventDefault(); onError(""); setBusy(true);
+    event.preventDefault(); setContextError(""); setContextBusy(true);
     try { await work(new FormData(event.currentTarget)); await load(); }
-    catch (reason) { onError(parseError(reason)); }
-    finally { setBusy(false); }
+    catch (reason) { setContextError(parseError(reason)); }
+    finally { setContextBusy(false); }
   }
-  if (role === "BOX_OWNER") return <OwnerMemberships actions={actions} onError={onError} busy={busy} setBusy={setBusy} />;
-  if (role === "COACH") return <div className="workspace-card">
+  const feedback = error && <div className="connected-error" role="alert">{error}</div>;
+  if (role === "BOX_OWNER") return <><OwnerMemberships actions={actions} onError={setContextError} busy={busy} setBusy={setContextBusy} />{feedback}</>;
+  if (role === "COACH") return <><div className="workspace-card">
     <div className="workspace-card-heading"><div><p className="demo-overline">COACH DESK</p><h3>Programming and exercise library</h3></div><button className="button button-outline" onClick={() => void load()} disabled={busy}>Refresh</button></div>
     <div className="workspace-columns">
       <form className="workspace-form" onSubmit={event => void submit(event, async form => {
@@ -125,18 +183,24 @@ function Workspace({ config, session, boxId, role, onError, busy, setBusy }: { c
         const duration = Number(form.get("duration"));
         const block = { title: String(form.get("blockTitle")), intent: "CONDITIONING", format: formatKind === "AMRAP" ? { kind: "AMRAP", durationSeconds: duration } : { kind: "FOR_TIME", timeCapSeconds: duration || null }, movements: [{ exerciseId, movementName: String(form.get("movementName")), variants: { RX: [{ kind: "REPETITIONS", value: String(reps) }], SCALED: [{ kind: "REPETITIONS", value: String(Math.max(1, Math.floor(reps * 0.75))) }], BEGINNER: [{ kind: "REPETITIONS", value: String(Math.max(1, Math.floor(reps * 0.5))) }] } }] };
         const created = await actions.call<Draft>("/api/coaches/workouts", { method: "POST", body: JSON.stringify({ title, blocks: [block] }) });
-        setDrafts(items => [created, ...items]);
+        if (mounted.current) onDraftCreated(created);
       })}><h4>Create workout draft</h4><label>Session title<input name="title" required maxLength={160} /></label><label>Exercise<select name="exerciseId" required defaultValue=""><option value="" disabled>Select an exercise</option>{exercises.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Movement name<input name="movementName" required /></label><div className="workspace-form-row"><label>Block title<input name="blockTitle" required defaultValue="Conditioning" /></label><label>Format<select name="format"><option value="FOR_TIME">For time</option><option value="AMRAP">AMRAP</option></select></label></div><div className="workspace-form-row"><label>Repetitions<input name="reps" type="number" min="1" required defaultValue="21" /></label><label>{"Duration / time cap (seconds)"}<input name="duration" type="number" min="1" defaultValue="600" /></label></div><button className="button button-dark" disabled={busy}>Save draft</button></form>
     </div>
     <div className="live-list"><h4>Exercises in this box</h4>{exercises.length ? exercises.map(item => <div className="live-list-row" key={item.id}><strong>{item.name}</strong><span>{item.category}</span><code>{item.id}</code></div>) : <p>No exercises loaded yet.</p>}</div>
-    <div className="live-list"><h4>Drafts created this session</h4>{drafts.length ? drafts.map(item => <DraftRow key={item.id} draft={item} config={config} session={session} boxId={boxId} onError={onError} onBusy={setBusy} onPublished={load} />) : <p>Create a draft to publish a dated immutable workout.</p>}</div>
-  </div>;
-  return <div className="workspace-card">
-    <div className="workspace-card-heading"><div><p className="demo-overline">ATHLETE TRAINING</p><h3>Today, history and personal bests</h3></div><label className="date-control">Schedule date<input type="date" value={date} onChange={event => setDate(event.target.value)} /></label></div>
+    <div className="live-list"><h4>Drafts created this session</h4>{drafts.length ? drafts.map(item => <DraftRow key={item.id} draft={item} actions={actions} onError={setContextError} onBusy={setContextBusy} onPublished={load} />) : <p>Create a draft to publish a dated immutable workout.</p>}</div>
+  </div>{feedback}</>;
+  return <><div className="workspace-card">
+    <div className="workspace-card-heading"><div><p className="demo-overline">ATHLETE TRAINING</p><h3>Today, history and personal bests</h3></div><label className="date-control">Schedule date<input type="date" value={date} onChange={event => {
+      currentDate.current = event.target.value;
+      requestSequence.current += 1;
+      setSchedule([]);
+      setSelectedPublication("");
+      setDate(event.target.value);
+    }} /></label></div>
     <div className="live-list"><h4>Published sessions</h4>{schedule.length ? schedule.map(item => <button className={`publication-choice ${currentPublication?.id === item.id ? "selected" : ""}`} key={item.id} onClick={() => setSelectedPublication(item.id)}><strong>{item.title}</strong><span>Published v{item.version} · {item.scheduledFor}</span></button>) : <p>No published workouts are scheduled for this date.</p>}</div>
-    {currentPublication && <PublicationCard publication={currentPublication} actions={actions} onError={onError} onBusy={setBusy} onSaved={load} busy={busy} />}
+    {currentPublication && <PublicationCard publication={currentPublication} actions={actions} onError={setContextError} onBusy={setContextBusy} onSaved={load} busy={busy} />}
     <div className="workspace-columns"><div className="live-list"><h4>Workout history</h4>{history.length ? history.map(item => <div className="live-list-row" key={item.id}><strong>{scoreLabel(item.score)}</strong><span>{item.prescriptionId}</span><code>{item.publicationId.slice(0, 8)}</code></div>) : <p>No results yet.</p>}</div><div className="live-list"><h4>Personal bests</h4>{bests.length ? bests.map(item => <div className="live-list-row" key={`${item.metricId}-${item.prescriptionId}`}><strong>{scoreLabel(item.score)}</strong><span>{item.prescriptionId}</span><code>{item.metricId.slice(0, 8)}</code></div>) : <p>Personal bests appear after you log a result.</p>}</div></div>
-  </div>;
+  </div>{feedback}</>;
 }
 
 function OwnerMemberships({ actions, onError, busy, setBusy }: { actions: { call: <T>(path: string, init?: RequestInit) => Promise<T> }; onError: (value: string) => void; busy: boolean; setBusy: (value: boolean) => void }) {
@@ -179,18 +243,18 @@ function MembershipRow({ member, disabled, onDeactivate, onUpdateRole }: { membe
   return <div className="member-row"><div><strong>{member.userId}</strong><small>{member.status}</small></div>{member.status === "ACTIVE" && <><select aria-label={`Role for ${member.userId}`} value={role} onChange={event => setRole(event.target.value as Role)}>{["BOX_OWNER", "COACH", "ATHLETE"].map(value => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select><button type="button" className="subtle-button" disabled={disabled || role === member.role} onClick={() => void onUpdateRole(member.userId, role)}>Save role</button><button type="button" className="subtle-button" disabled={disabled} onClick={() => void onDeactivate(member.userId)}>Deactivate</button></>}</div>;
 }
 
-function DraftRow({ draft, config, session, boxId, onError, onBusy, onPublished }: { draft: Draft; config: OidcConfig; session: Session; boxId: string; onError: (value: string) => void; onBusy: (value: boolean) => void; onPublished: () => Promise<void> }) {
+function DraftRow({ draft, actions, onError, onBusy, onPublished }: { draft: Draft; actions: { call: <T>(path: string, init?: RequestInit) => Promise<T> }; onError: (value: string) => void; onBusy: (value: boolean) => void; onPublished: () => Promise<void> }) {
   const [title, setTitle] = useState(draft.title);
   const [savedTitle, setSavedTitle] = useState(draft.title);
   async function rename() {
     onBusy(true); onError("");
-    try { await apiRequest<Draft>(config, session, boxId, `/api/coaches/workouts/${draft.id}/title`, { method: "PUT", body: JSON.stringify({ title }) }); setSavedTitle(title.trim()); await onPublished(); }
+    try { await actions.call<Draft>(`/api/coaches/workouts/${draft.id}/title`, { method: "PUT", body: JSON.stringify({ title }) }); setSavedTitle(title.trim()); await onPublished(); }
     catch (reason) { onError(parseError(reason)); }
     finally { onBusy(false); }
   }
   return <form className="publish-row" onSubmit={event => {
     event.preventDefault(); const form = new FormData(event.currentTarget); onBusy(true); onError("");
-    apiRequest<Publication>(config, session, boxId, `/api/coaches/workouts/${draft.id}/publish`, { method: "POST", body: JSON.stringify({ scheduledFor: String(form.get("scheduledFor")) }) })
+    actions.call<Publication>(`/api/coaches/workouts/${draft.id}/publish`, { method: "POST", body: JSON.stringify({ scheduledFor: String(form.get("scheduledFor")) }) })
       .then(() => onPublished()).catch(error => onError(parseError(error))).finally(() => onBusy(false));
   }}><label>Draft title<input value={title} onChange={event => setTitle(event.target.value)} maxLength={160} /></label><span><small>Draft v{draft.version} · {draft.blocks.length} blocks</small><button className="subtle-button" type="button" disabled={!title.trim() || title.trim() === savedTitle} onClick={() => void rename()}>Save title</button></span><label>Publish date<input name="scheduledFor" type="date" required defaultValue={today()} /></label><button className="button button-lime" type="submit">Publish snapshot</button></form>;
 }

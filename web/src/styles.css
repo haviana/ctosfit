@@ -12,7 +12,12 @@
   --dark:#18221f;
   --line:#d9d9d0;
   --mono:"DM Mono",monospace;
-  --display:"Manrope","DM Sans",sans-serif
+  --display:"Manrope","DM Sans",sans-serif;
+  --surface:#fffefa;
+  --surface-muted:#f7f8f2;
+  --border:#d9ddd3;
+  --radius-sm:6px;
+  --radius-md:14px
 }
 *{
   box-sizing:border-box
@@ -2447,3 +2452,53 @@ h1 em,h2 em{
 .member-row>div{display:grid;gap:5px;min-width:0;overflow-wrap:anywhere}
 .member-row small{color:#74806c;font-size:12px}
 @media(max-width:720px){.connected-onboarding{grid-template-columns:1fr;padding:18px}.membership-form{grid-template-columns:1fr}.membership-form h4{grid-column:auto}}
+
+/* Role application routes */
+.app-shell{min-height:100vh;display:grid;grid-template-columns:248px minmax(0,1fr);background:var(--paper)}
+.app-shell-sidebar{position:sticky;top:0;height:100vh;padding:28px 22px;display:flex;flex-direction:column;background:var(--dark);color:#f5f5ee}
+.app-shell-brand{color:#fff}
+.app-shell-role{margin:30px 0 12px;color:#aeb9b2;font:10px var(--mono);letter-spacing:1.2px;text-transform:uppercase}
+.app-shell-nav{display:grid;gap:5px}
+.app-shell-nav a{display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--radius-sm);color:#cbd3ce;font-size:13px;font-weight:650}
+.app-shell-nav a:hover{background:#ffffff12;color:#fff}
+.app-shell-nav a[aria-current="page"]{background:var(--lime);color:var(--ink)}
+.app-shell-nav a[aria-current="page"]>span:last-child{text-decoration:underline;text-underline-offset:3px}
+.app-shell-nav a>span:first-child{width:18px;text-align:center;font-family:var(--mono)}
+.app-shell-sidebar-note{margin-top:auto;padding:16px;display:flex;align-items:start;gap:10px;border:1px solid #ffffff1f;border-radius:var(--radius-md);color:#dce3de}
+.app-shell-sidebar-note>span{color:var(--lime);font-size:9px;margin-top:5px}
+.app-shell-sidebar-note p{display:grid;gap:4px;margin:0}
+.app-shell-sidebar-note strong{font-size:11px}
+.app-shell-sidebar-note small{color:#9eaaa3;font-size:10px;line-height:1.45}
+.app-shell-stage{min-width:0}
+.app-shell-header{min-height:116px;padding:25px clamp(22px,4vw,58px);display:flex;align-items:end;justify-content:space-between;gap:24px;border-bottom:1px solid var(--border);background:var(--surface)}
+.app-shell-header p{margin:0 0 8px;color:#59665f;font:9px var(--mono);letter-spacing:1.2px}
+.app-shell-header h1{margin:0;font:750 clamp(28px,3vw,42px)/1 var(--display);letter-spacing:-2px}
+.app-shell-context{padding:7px 10px;border:1px solid var(--border);border-radius:999px;color:#58645d;font:9px var(--mono);letter-spacing:.6px;text-transform:uppercase}
+.app-shell-content{min-width:0;container-type:inline-size}
+.workspace-entry-links{display:flex;flex-wrap:wrap;gap:12px;max-width:1180px;margin:0 auto 20px}
+@container (max-width:740px){
+ .app-shell-content .workspace-columns,.app-shell-content .live-list-row{grid-template-columns:minmax(0,1fr)}
+ .app-shell-content .workspace-form-row,.app-shell-content .publish-row{flex-direction:column;align-items:stretch}
+ .app-shell-content .publish-row label{max-width:none}
+}
+.app-shell-content .connected-section{min-height:calc(100vh - 116px);padding-top:54px}
+.app-shell-content .connected-heading h2{font-size:clamp(38px,5vw,62px)}
+.not-found-page{min-height:100vh;padding:clamp(28px,8vw,110px);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;background:var(--paper)}
+.not-found-page>.eyebrow{margin-top:64px}
+.not-found-page h1{max-width:720px;margin:0;font:750 clamp(42px,7vw,86px)/.98 var(--display);letter-spacing:-.06em}
+.not-found-page>p:not(.eyebrow){color:var(--muted)}
+.not-found-page>div{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+@media(max-width:760px){
+ .app-shell{grid-template-columns:1fr}
+ .app-shell-sidebar{position:static;height:auto;padding:14px 18px;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:12px}
+ .app-shell-brand{grid-column:1}
+ .app-shell-role,.app-shell-sidebar-note{display:none}
+ .app-shell-nav{grid-column:2;display:flex;justify-content:flex-end;gap:4px}
+ .app-shell-nav a{padding:9px 10px;font-size:11px}
+ .app-shell-nav a>span:first-child{display:none}
+ .app-shell-header{min-height:94px;padding:19px 18px;align-items:center}
+ .app-shell-header h1{font-size:29px;letter-spacing:-1.5px}
+ .app-shell-context{display:none}
+ .app-shell-content .connected-section{min-height:calc(100vh - 159px);padding:42px 16px}
+ .app-shell-content .connected-heading h2{font-size:38px}
+}

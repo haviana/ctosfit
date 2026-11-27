@@ -2,6 +2,15 @@
 
 The web app contains a public landing page, a fictional browser-only demo, and a separate authenticated workspace connected to the REST API.
 
+The application routes are:
+
+- `/` — public landing page, demo, and sign-in entry point.
+- `/coach` — responsive coach workspace shell.
+- `/athlete` — responsive athlete workspace shell.
+
+Routes select the user experience only. They do not grant permissions: the API
+continues to enforce active membership, role, and box scope on every request.
+
 ## Configure OIDC sign-in
 
 1. Copy `.env.example` to `.env.local`.
