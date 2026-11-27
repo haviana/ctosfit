@@ -27,5 +27,9 @@ jobs:
           java-version: "25"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+      - name: Verify Docker for Testcontainers
+        run: docker info
       - name: Build and test
         run: ./gradlew clean test build
+      - name: Require the PostgreSQL tenant-isolation suite
+        run: bash scripts/require-tenant-isolation-results.sh

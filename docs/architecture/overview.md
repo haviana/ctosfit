@@ -43,6 +43,8 @@ Initial approach: shared PostgreSQL database/schema with tenant_id on tenant-own
 - Test cross-tenant reads, writes, lists, nested resources and identifier guessing.
 - Audit membership and role changes.
 
+The verified model, denial rules, and PostgreSQL test approach are in [tenant isolation](tenant-isolation.md).
+
 PostgreSQL Row-Level Security may be evaluated as defense in depth, considering connection-pool/session-context behavior and migration complexity. It does not replace application authorization tests.
 
 ## Data integrity
@@ -52,7 +54,7 @@ Use versioned database migrations. Keep editable drafts separate from immutable 
 Design REST endpoints around application capabilities, not direct table CRUD. Maintain an OpenAPI contract. Validate input at boundaries and enforce invariants in domain/application layers. Frontend routes reflect admin/coach/athlete capabilities; hiding a UI control is never a security boundary.
 
 ## Testing
-Domain tests for workout validation, publication and score comparison; application tests for use cases; PostgreSQL integration tests; tenant-isolation tests; API auth/validation tests; end-to-end coach publication and athlete result logging. Testcontainers may be used for database integration.
+Domain tests for workout validation, publication and score comparison; application tests for use cases; PostgreSQL integration tests; tenant-isolation tests; API auth/validation tests; end-to-end coach publication and athlete result logging. The tenant-isolation suites use Testcontainers against PostgreSQL and are described in [tenant isolation](tenant-isolation.md).
 
 ## Deployment
 Start with one backend deployment, one frontend deployment and managed PostgreSQL. Keep object storage separate. Configure environments and secrets securely. Define health checks, logs, metrics, alerting, backup retention and restore before pilot.
