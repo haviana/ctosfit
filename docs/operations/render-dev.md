@@ -15,4 +15,7 @@ OIDC values and signing configuration use `sync: false` and must be entered in R
 3. Fill the `sync: false` values for the API service.
 4. Wait for the service to become live and verify `https://ctosfit-api-dev.onrender.com/actuator/health/readiness` returns HTTP 200.
 
-Render auto-deploys only after the repository checks pass.
+After the Blueprint syncs, Render starts development deployments when a commit
+lands on the linked `main` branch. This includes pull request merges and any
+direct pushes GitHub allows. Require pull requests and passing checks on
+`main` before enabling this trigger so CI runs before deployment.
