@@ -28,7 +28,9 @@ export default function AuthenticatedWorkspace({ initialRole = "COACH", lockRole
   const [boxId, setBoxId] = useState(() => sessionStorage.getItem("ctosfit.selectedBox") ?? "");
   const [selectedRole, setSelectedRole] = useState<Role>(initialRole);
   const [drafts, setDrafts] = useState<Draft[]>([]);
+  const boxCreation = useRef<AbortController | null>(null);
   const invalidateSession = useCallback(() => {
+    boxCreation.current?.abort();
     clearSession();
     setSession(null);
     setDrafts([]);
@@ -57,9 +59,10 @@ export default function AuthenticatedWorkspace({ initialRole = "COACH", lockRole
     setError("");
     try { await beginSignIn(config); } catch (reason) { setError(parseError(reason)); }
   }
-  function signOut() { clearSession(); setSession(null); setDrafts([]); setBusy(false); setError(""); }
+  function signOut() { boxCreation.current?.abort(); clearSession(); setSession(null); setDrafts([]); setBusy(false); setError(""); }
   function changeBox(value: string) {
     if (value === boxId) return;
+    boxCreation.current?.abort();
     setDrafts([]);
     setError("");
     setBusy(false);
@@ -71,13 +74,32 @@ export default function AuthenticatedWorkspace({ initialRole = "COACH", lockRole
     event.preventDefault();
     if (!config || !session) return;
     const form = new FormData(event.currentTarget);
+    boxCreation.current?.abort();
+    const request = new AbortController();
+    boxCreation.current = request;
     setError(""); setBusy(true);
     try {
-      const client = createApiClient({ apiUrl: config.apiUrl, accessToken: session.accessToken, onUnauthorized: invalidateSession });
-      const created = await client.post<{ id: string }>("/api/boxes", { name: String(form.get("boxName")), timeZone: String(form.get("timeZone")) });
-      changeBox(created.id); setSelectedRole("BOX_OWNER");
-    } catch (reason) { setError(parseError(reason)); }
-    finally { setBusy(false); }
+      const client = createApiClient({
+        apiUrl: config.apiUrl, accessToken: session.accessToken,
+        onUnauthorized: () => { if (!request.signal.aborted) invalidateSession(); },
+      });
+      const created = await client.request<{ id: string }>("/api/boxes", {
+        method: "POST",
+        body: JSON.stringify({ name: String(form.get("boxName")), timeZone: String(form.get("timeZone")) }),
+        signal: request.signal,
+      });
+      if (!request.signal.aborted) {
+        changeBox(created.id);
+        setSelectedRole("BOX_OWNER");
+      }
+    } catch (reason) {
+      if (!request.signal.aborted) setError(parseError(reason));
+    } finally {
+      if (boxCreation.current === request) {
+        boxCreation.current = null;
+        setBusy(false);
+      }
+    }
   }
 
   return <section className="connected-section" id="member-workspace">

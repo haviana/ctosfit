@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { finishSignInOnce, resolveSignInReturnPath } from "./oidc";
+import { finishSignInOnce, readSession, resolveSignInReturnPath } from "./oidc";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -19,6 +19,40 @@ describe("resolveSignInReturnPath", () => {
 });
 
 describe("finishSignInOnce", () => {
+  it.each(["/", "/auth/callback"])("stores the session after a single token exchange at %s", async pathname => {
+    const origin = "https://app.example";
+    const issuer = "https://issuer.example";
+    const redirectUri = `${origin}${pathname}`;
+    const location = { origin, pathname, search: "?code=example&state=state" };
+    const storage = new Map([["ctosfit.oidc.flow", JSON.stringify({ verifier: "verifier", state: "state", nonce: "nonce", returnPath: "/coach" })]]);
+    vi.stubGlobal("sessionStorage", {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+    });
+    vi.stubGlobal("window", {
+      location,
+      history: { replaceState: (_state: unknown, _title: string, path: string) => {
+        location.pathname = path;
+        location.search = "";
+      } },
+    });
+    const header = btoa(JSON.stringify({ alg: "RS256", kid: "key" }));
+    const claims = btoa(JSON.stringify({ iss: issuer, aud: "client", nonce: "nonce", exp: Math.floor(Date.now() / 1000) + 3600 }));
+    vi.stubGlobal("crypto", { subtle: { importKey: vi.fn().mockResolvedValue({}), verify: vi.fn().mockResolvedValue(true) } });
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(Response.json({ issuer, authorization_endpoint: `${issuer}/authorize`, token_endpoint: `${issuer}/token`, jwks_uri: `${issuer}/keys` }))
+      .mockResolvedValueOnce(Response.json({ access_token: "example-token", id_token: `${header}.${claims}.c2ln` }))
+      .mockResolvedValueOnce(Response.json({ keys: [{ kid: "key" }] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const config = { issuerUrl: issuer, clientId: "client", redirectUri, apiUrl: "https://api.example" };
+    await expect(Promise.all([finishSignInOnce(config), finishSignInOnce(config)])).resolves.toEqual([true, true]);
+    expect(fetchMock.mock.calls.filter(([url]) => url === `${issuer}/token`)).toHaveLength(1);
+    expect(readSession()?.accessToken).toBe("example-token");
+    expect(location.pathname).toBe("/coach");
+  });
+
   it.each(["/", "/auth/callback"])("shares the callback exchange at %s and retains the retry destination", async (pathname) => {
     const flow = JSON.stringify({ verifier: "verifier", state: "state", nonce: "nonce", returnPath: "/athlete" });
     const location = { origin: "https://app.example", pathname, search: "?code=code&state=state" };

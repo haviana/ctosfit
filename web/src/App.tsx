@@ -289,8 +289,15 @@ export default function App() {
   const [routeForRender, setRoute] = useState(readRoute);
   useEffect(() => {
     const updateRoute = () => setRoute(readRoute());
+    const reloadRestoredPage = (event: PageTransitionEvent) => {
+      if (event.persisted) window.location.reload();
+    };
     window.addEventListener("popstate", updateRoute);
-    return () => window.removeEventListener("popstate", updateRoute);
+    window.addEventListener("pageshow", reloadRestoredPage);
+    return () => {
+      window.removeEventListener("popstate", updateRoute);
+      window.removeEventListener("pageshow", reloadRestoredPage);
+    };
   }, []);
   useEffect(() => {
     const name = routeForRender === "coach" ? "Coach workspace" : routeForRender === "athlete" ? "Athlete workspace" : "training, in sync";
