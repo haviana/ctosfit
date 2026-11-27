@@ -1,0 +1,10 @@
+{
+  "issueKey": "WOD-41",
+  "repository": "haviana/ctosfit",
+  "branch": "codex/factory/WOD-41",
+  "lockBranch": "codex/factory-lock/WOD-41",
+  "targetBranch": "main",
+  "runId": "factory-WOD-41-20261127T212410Z",
+  "implementer": "codex",
+  "claimedAt": "2026-11-27T21:24:10Z"
+}
