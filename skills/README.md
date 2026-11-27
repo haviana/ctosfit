@@ -7,7 +7,7 @@ Task playbooks that agents can follow. Read the root `AGENTS.md` and relevant st
 - [Independent code review](code-review/SKILL.md)
 - [Jira status monitor](jira-status-monitor/SKILL.md)
 - [Jira workflow automation](jira-workflow/SKILL.md)
-- [Jira ticket delivery factory](jira-ticket-delivery-factory/SKILL.md)
+- [Jira ticket delivery factory](jira-ticket-delivery-factory/SKILL.md). Cursor loads the same workflow from `.cursor/skills/jira-ticket-delivery-factory/SKILL.md`.
 - [Secure change](secure-change/SKILL.md)
 
 Use the factory with an explicit Jira key for one ticket or `next` for one
