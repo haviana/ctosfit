@@ -18,14 +18,13 @@ class ManageBoxMembershipsService(
 
     override fun addOrReactivate(userId: UserId, role: Role): Membership {
         val context = requireOwner()
+        requireOwnerRolePreserved(context.userId, userId, role)
         return repository.addOrReactivate(userId, context.boxId, role)
     }
 
     override fun changeRole(userId: UserId, role: Role): Membership {
         val context = requireOwner()
-        require(userId != context.userId || role == Role.BOX_OWNER) {
-            "An owner cannot remove their own owner role"
-        }
+        requireOwnerRolePreserved(context.userId, userId, role)
         return repository.changeRole(userId, context.boxId, role)
             ?: throw MembershipNotFoundException()
     }
@@ -35,6 +34,12 @@ class ManageBoxMembershipsService(
         require(userId != context.userId) { "An owner cannot deactivate their own membership" }
         return repository.deactivate(userId, context.boxId)
             ?: throw MembershipNotFoundException()
+    }
+
+    private fun requireOwnerRolePreserved(actor: UserId, userId: UserId, role: Role) {
+        require(userId != actor || role == Role.BOX_OWNER) {
+            "An owner cannot remove their own owner role"
+        }
     }
 
     private fun requireOwner() = administrator.current().also {

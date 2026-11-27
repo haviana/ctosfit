@@ -33,6 +33,9 @@ class JdbcMembershipRepository(private val dataSource: DataSource) : MembershipR
             }
             membership
         } else {
+            if (existing.status == MembershipStatus.ACTIVE && existing.role == Role.BOX_OWNER && role != Role.BOX_OWNER) {
+                ensureAnotherOwner(connection, boxId, userId)
+            }
             connection.prepareStatement("UPDATE box_memberships SET role = ?, status = 'ACTIVE' WHERE id = ? AND box_id = ?").use { statement ->
                 statement.setString(1, role.name); statement.setObject(2, UUID.fromString(existing.id.value)); statement.setObject(3, UUID.fromString(boxId.value)); statement.executeUpdate()
             }
