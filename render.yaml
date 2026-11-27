@@ -13,7 +13,7 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /actuator/health/readiness
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: commit
     envVars:
       - key: CTOSFIT_DATABASE_HOST
         fromDatabase:
@@ -54,7 +54,7 @@ services:
     runtime: static
     buildCommand: cd web && npm ci && npm run build
     staticPublishPath: web/dist
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: commit
     routes:
       - type: rewrite
         source: /*
