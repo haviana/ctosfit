@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.convert.converter.Converter
 import org.springframework.core.annotation.Order
+import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.GrantedAuthority
@@ -42,6 +43,8 @@ class SecurityConfiguration {
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests {
+                it.requestMatchers(HttpMethod.POST, "/api/boxes").authenticated()
+                it.requestMatchers("/api/box-owner/memberships", "/api/box-owner/memberships/{userId}").authenticated()
                 it.requestMatchers("/api/box-owner/**").hasAuthority(Role.BOX_OWNER.name)
                 it.requestMatchers("/api/coaches/**").hasAnyAuthority(Role.BOX_OWNER.name, Role.COACH.name)
                 it.requestMatchers("/api/athletes/**").hasAuthority(Role.ATHLETE.name)

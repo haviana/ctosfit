@@ -1,5 +1,10 @@
 package com.ctosfit.security
 
+import com.ctosfit.identity.adapter.out.JdbcMembershipRepository
+import com.ctosfit.identity.domain.BoxId
+import com.ctosfit.identity.domain.MembershipStatus
+import com.ctosfit.identity.domain.Role
+import com.ctosfit.identity.domain.UserId
 import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -23,6 +28,7 @@ import org.springframework.test.web.servlet.setup.DefaultMockMvcBuilder
 import org.springframework.web.context.WebApplicationContext
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
@@ -32,6 +38,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 class ExerciseTenantIsolationIntegrationTest @Autowired constructor(
     context: WebApplicationContext,
     private val jdbcTemplate: JdbcTemplate,
+    private val membershipRepository: JdbcMembershipRepository,
 ) {
     private val mockMvc: MockMvc = MockMvcBuilders.webAppContextSetup(context).apply<DefaultMockMvcBuilder>(springSecurity()).build()
     @BeforeEach
@@ -41,6 +48,91 @@ class ExerciseTenantIsolationIntegrationTest @Autowired constructor(
         insertMembership(USER_A, BOX_A)
         insertMembership(USER_A, BOX_B)
         insertMembership(USER_ATHLETE, BOX_A, "ATHLETE")
+    }
+
+    @Test
+    fun `authenticated user can create a box and becomes its active owner`() {
+        val body = """{"name":"New box","timeZone":"Europe/Lisbon"}"""
+        mockMvc.perform(
+            post("/api/boxes").contentType(MediaType.APPLICATION_JSON).content(body),
+        ).andExpect(status().isUnauthorized)
+
+        val box = mockMvc.perform(
+            post("/api/boxes")
+                .with(jwt().jwt { it.subject("new-owner") })
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body),
+        ).andExpect(status().isCreated).andReturn().response.contentAsString
+        val boxId = extractId(box)
+        assertContains(box, "\"timeZone\":\"Europe/Lisbon\"")
+
+        val role = jdbcTemplate.queryForObject(
+            "SELECT role FROM box_memberships WHERE user_id = ? AND box_id = ? AND status = 'ACTIVE'",
+            String::class.java,
+            "new-owner",
+            UUID.fromString(boxId),
+        )
+        assertEquals("BOX_OWNER", role)
+        fun addMember(selectedBox: String) = post("/api/box-owner/memberships")
+            .with(jwt().jwt { it.subject("new-owner") })
+            .header(BOX_HEADER, selectedBox)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"userId":"invited-coach","role":"COACH"}""")
+
+        mockMvc.perform(addMember(boxId)).andExpect(status().isCreated)
+        mockMvc.perform(addMember(BOX_B.toString())).andExpect(status().isForbidden)
+        mockMvc.perform(
+            post("/api/box-owner/memberships")
+                .with(coach(USER_A))
+                .header(BOX_HEADER, BOX_A.toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"userId":"invited-coach","role":"COACH"}"""),
+        ).andExpect(status().isForbidden)
+        mockMvc.perform(
+            get("/api/boxes").with(jwt().jwt { it.subject("new-owner") }),
+        ).andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `membership add retains the active owner and allows ordinary additions`() {
+        val owner = "selected-box-owner"
+        insertMembership(owner, BOX_A, "BOX_OWNER")
+        fun add(boxId: UUID, userId: String) = post("/api/box-owner/memberships")
+            .with(jwt().jwt { it.subject(owner) }.authorities(SimpleGrantedAuthority("BOX_OWNER")))
+            .header(BOX_HEADER, boxId.toString())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"userId":"$userId","role":"COACH"}""")
+
+        mockMvc.perform(add(BOX_A, owner)).andExpect(status().isForbidden)
+        mockMvc.perform(add(BOX_B, "new-coach")).andExpect(status().isForbidden)
+        mockMvc.perform(add(BOX_A, "new-coach")).andExpect(status().isCreated)
+
+        val ownerRole = jdbcTemplate.queryForObject(
+            "SELECT role FROM box_memberships WHERE user_id = ? AND box_id = ? AND status = 'ACTIVE'",
+            String::class.java,
+            owner,
+            BOX_A,
+        )
+        assertEquals("BOX_OWNER", ownerRole)
+    }
+
+    @Test
+    fun `membership repository preserves the last owner and reactivates ordinary members`() {
+        val boxId = BoxId(BOX_A.toString())
+        val owner = UserId("sole-owner")
+        insertMembership(owner.value, BOX_A, "BOX_OWNER")
+        assertFailsWith<IllegalStateException> {
+            membershipRepository.addOrReactivate(owner, boxId, Role.COACH)
+        }
+        val storedOwner = membershipRepository.findByUserAndBox(owner, boxId)
+        assertEquals(Role.BOX_OWNER, storedOwner?.role)
+        assertEquals(MembershipStatus.ACTIVE, storedOwner?.status)
+
+        val coach = UserId(USER_A)
+        membershipRepository.deactivate(coach, boxId)
+        assertEquals(MembershipStatus.INACTIVE, membershipRepository.findByUserAndBox(coach, boxId)?.status)
+        membershipRepository.addOrReactivate(coach, boxId, Role.COACH)
+        assertEquals(MembershipStatus.ACTIVE, membershipRepository.findByUserAndBox(coach, boxId)?.status)
     }
 
     @Test
