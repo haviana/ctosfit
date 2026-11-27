@@ -6,5 +6,6 @@
   "targetBranch": "main",
   "runId": "factory-WOD-12-20261126T193447Z",
   "implementer": "codex",
-  "claimedAt": "2026-11-26T19:34:47Z"
+  "claimedAt": "2026-11-26T19:34:47Z",
+  "pullRequestNumber": 21
 }
