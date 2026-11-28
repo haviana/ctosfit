@@ -1,0 +1,80 @@
+name: Deploy
+
+# Runs the workflow file from the default branch. Pull request code is not checked out
+# and cannot read the Render hook secrets. A push to main deploys only after CI and
+# Quality have both succeeded for that commit, and only while it is still the tip of main.
+on:
+  workflow_run:
+    workflows: ["CI", "Quality"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: render-dev-deploy
+  cancel-in-progress: false
+
+jobs:
+  render:
+    name: Deploy development to Render
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
+    steps:
+      - name: Require main for a manual deploy
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          DEPLOY_REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [[ "$DEPLOY_REF" != "refs/heads/main" ]]; then
+            echo "::error::Manual deploy runs only from main. Select the main branch in Run workflow."
+            exit 1
+          fi
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Deploy API and web
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RENDER_DEPLOY_HOOK_API: ${{ secrets.RENDER_DEPLOY_HOOK_API }}
+          RENDER_DEPLOY_HOOK_WEB: ${{ secrets.RENDER_DEPLOY_HOOK_WEB }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_run" ]]; then
+            sha="$HEAD_SHA"
+          else
+            sha="$GITHUB_SHA"
+          fi
+          if [[ "$EVENT_NAME" == "workflow_run" && "$sha" != "$GITHUB_SHA" ]]; then
+            echo "Commit ${sha} is no longer the tip of main (${GITHUB_SHA}). Skipping so an older run cannot roll the services back."
+            exit 0
+          fi
+          require_success() {
+            local workflow="$1"
+            local conclusion
+            conclusion="$(gh api --jq '.workflow_runs[0].conclusion // ""' \
+              "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${sha}&event=push&status=completed&per_page=1")"
+            if [[ "$conclusion" == "success" ]]; then
+              return 0
+            fi
+            echo "Deploy is waiting: ${workflow} for ${sha} is '${conclusion:-not completed}'."
+            if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+              echo "::error::${workflow} has not succeeded for ${sha}. A manual deploy runs only after CI and Quality succeed on that commit."
+              exit 1
+            fi
+            exit 0
+          }
+          require_success ci.yml
+          require_success quality.yml
+          bash scripts/render-deploy.sh "$sha"

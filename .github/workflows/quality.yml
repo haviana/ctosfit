@@ -33,6 +33,9 @@ jobs:
             exit 0
           fi
           bash -n "${scripts[@]}"
+      - name: Test the Render deploy script
+        shell: bash
+        run: bash scripts/render-deploy.test.sh
 
   backend:
     name: Backend build and tests
