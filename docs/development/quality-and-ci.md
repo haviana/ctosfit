@@ -1,6 +1,6 @@
 # Quality and CI
 
-GitHub Actions checks pull requests and pushes. The CI workflow targets pull requests to `main` and pushes to `main`; the quality workflow also checks repository hygiene and conditionally runs backend and frontend checks when those projects are present.
+GitHub Actions checks pull requests and pushes. The CI workflow targets pull requests to `main` and pushes to `main`; the quality workflow also checks repository hygiene and conditionally runs backend and frontend checks when those projects are present. A separate Deploy workflow publishes the development API and web services to Render only after both CI and Quality succeed for the same push to `main`. It does not run for pull requests. The hook secrets and the manual run are described in [Render development deployment](../operations/render-dev.md).
 
 The backend uses JDK 25 and the Gradle Wrapper pinned to Gradle 9.7.0. CI runs `./gradlew clean test build`; the quality workflow runs `./gradlew check` for Gradle projects that include the wrapper.
 
