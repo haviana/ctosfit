@@ -23,6 +23,6 @@ The browser flow uses OIDC state, nonce, and PKCE. The bearer token is stored on
 
 ## Live workspace
 
-Choose Coach to create an exercise, create a structured workout draft, and publish a dated immutable snapshot. Choose Athlete to view the selected date's published workouts, submit a typed result linked to its publication, and review history and comparable personal bests. Actions call the authenticated API and do not write to the fictional demo.
+Choose Coach to create an exercise, start a structured workout draft, and build it in the visual editor. The editor adds, edits, reorders, and removes blocks and movements through the coach workout API, so a multi-block session does not require raw workout text. A new movement asks for RX, Scaled, and Beginner repetition counts. Saving a block keeps prescription variants that are already stored, including a movement that only has RX or that uses load or distance, and those movements can be removed. Publishing stays disabled while a block edit is open, so the snapshot includes the saved blocks. Publishing still creates a dated immutable snapshot. Choose Athlete to view the selected date's published workouts, submit a typed result linked to its publication, and review history and comparable personal bests. Actions call the authenticated API and do not write to the fictional demo.
 
 The demo at **Explore the demo** remains isolated from the API and uses sample Northline data only.

@@ -1,5 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createApiClient } from "./api-client";
+import WorkoutDraftEditor from "./WorkoutDraftEditor";
 import { beginSignIn, clearSession, finishSignInOnce, readOidcConfig, readSession } from "./oidc";
 import type { OidcConfig } from "./oidc";
 
@@ -117,15 +118,15 @@ export default function AuthenticatedWorkspace({ initialRole = "COACH", lockRole
       {!boxId && (lockRole
         ? <div className="connected-card"><h3>Select your box</h3><p>Enter a box ID above. Your active membership determines which actions the API allows in this workspace.</p></div>
         : <div className="connected-onboarding"><div><p className="demo-overline">GET STARTED</p><h3>Create your box</h3><p>Creating a box makes your signed-in account its first owner. Coaches and athletes can instead enter an existing box ID supplied by an owner.</p></div><form className="workspace-form" onSubmit={event => void createBox(event)}><label>Box name<input name="boxName" required maxLength={120} /></label><label>Time zone<input name="timeZone" required defaultValue={Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"} /></label><button className="button button-dark" disabled={busy}>Create box</button></form></div>)}
-      {boxId && config && <Workspace key={`${session.expiresAt}:${boxId}:${selectedRole}`} config={config} session={session} boxId={boxId} role={selectedRole} onUnauthorized={invalidateSession} drafts={drafts} onDraftCreated={draft => setDrafts(items => [draft, ...items])} />}
+      {boxId && config && <Workspace key={`${session.expiresAt}:${boxId}:${selectedRole}`} config={config} session={session} boxId={boxId} role={selectedRole} onUnauthorized={invalidateSession} drafts={drafts} onDraftCreated={draft => setDrafts(items => [draft, ...items])} onDraftUpdated={draft => setDrafts(items => items.map(item => item.id === draft.id ? draft : item))} />}
     </>}
     {error && <div className="connected-error" role="alert">{error}</div>}
   </section>;
 }
 
-function Workspace({ config, session, boxId, role, onUnauthorized, drafts, onDraftCreated }: {
+function Workspace({ config, session, boxId, role, onUnauthorized, drafts, onDraftCreated, onDraftUpdated }: {
   config: OidcConfig; session: Session; boxId: string; role: Role;
-  onUnauthorized: () => void; drafts: Draft[]; onDraftCreated: (draft: Draft) => void;
+  onUnauthorized: () => void; drafts: Draft[]; onDraftCreated: (draft: Draft) => void; onDraftUpdated: (draft: Draft) => void;
 }) {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [error, onError] = useState("");
@@ -144,7 +145,12 @@ function Workspace({ config, session, boxId, role, onUnauthorized, drafts, onDra
     return () => { mounted.current = false; requestSequence.current += 1; };
   }, []);
   const setContextError = useCallback((value: string) => { if (mounted.current) onError(value); }, [onError]);
-  const setContextBusy = useCallback((value: boolean) => { if (mounted.current) setBusy(value); }, [setBusy]);
+  const busyRequests = useRef(0);
+  const setContextBusy = useCallback((value: boolean) => {
+    if (!mounted.current) return;
+    busyRequests.current = Math.max(0, busyRequests.current + (value ? 1 : -1));
+    setBusy(busyRequests.current > 0);
+  }, [setBusy]);
   const client = useMemo(() => createApiClient({
     apiUrl: config.apiUrl, accessToken: session.accessToken, boxId,
     onUnauthorized: () => { if (mounted.current) onUnauthorized(); },
@@ -209,7 +215,7 @@ function Workspace({ config, session, boxId, role, onUnauthorized, drafts, onDra
       })}><h4>Create workout draft</h4><label>Session title<input name="title" required maxLength={160} /></label><label>Exercise<select name="exerciseId" required defaultValue=""><option value="" disabled>Select an exercise</option>{exercises.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Movement name<input name="movementName" required /></label><div className="workspace-form-row"><label>Block title<input name="blockTitle" required defaultValue="Conditioning" /></label><label>Format<select name="format"><option value="FOR_TIME">For time</option><option value="AMRAP">AMRAP</option></select></label></div><div className="workspace-form-row"><label>Repetitions<input name="reps" type="number" min="1" required defaultValue="21" /></label><label>{"Duration / time cap (seconds)"}<input name="duration" type="number" min="1" defaultValue="600" /></label></div><button className="button button-dark" disabled={busy}>Save draft</button></form>
     </div>
     <div className="live-list"><h4>Exercises in this box</h4>{exercises.length ? exercises.map(item => <div className="live-list-row" key={item.id}><strong>{item.name}</strong><span>{item.category}</span><code>{item.id}</code></div>) : <p>No exercises loaded yet.</p>}</div>
-    <div className="live-list"><h4>Drafts created this session</h4>{drafts.length ? drafts.map(item => <DraftRow key={item.id} draft={item} actions={actions} onError={setContextError} onBusy={setContextBusy} onPublished={load} />) : <p>Create a draft to publish a dated immutable workout.</p>}</div>
+    <div className="live-list"><h4>Drafts created this session</h4>{drafts.length ? drafts.map(item => <DraftRow key={item.id} draft={item} exercises={exercises} actions={actions} busy={busy} onError={setContextError} onBusy={setContextBusy} onPublished={load} onDraftUpdated={onDraftUpdated} />) : <p>Create a draft, then add, edit, reorder, or remove blocks in the visual editor.</p>}</div>
   </div>{feedback}</>;
   return <><div className="workspace-card">
     <div className="workspace-card-heading"><div><p className="demo-overline">ATHLETE TRAINING</p><h3>Today, history and personal bests</h3></div><label className="date-control">Schedule date<input type="date" value={date} onChange={event => {
@@ -265,20 +271,29 @@ function MembershipRow({ member, disabled, onDeactivate, onUpdateRole }: { membe
   return <div className="member-row"><div><strong>{member.userId}</strong><small>{member.status}</small></div>{member.status === "ACTIVE" && <><select aria-label={`Role for ${member.userId}`} value={role} onChange={event => setRole(event.target.value as Role)}>{["BOX_OWNER", "COACH", "ATHLETE"].map(value => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select><button type="button" className="subtle-button" disabled={disabled || role === member.role} onClick={() => void onUpdateRole(member.userId, role)}>Save role</button><button type="button" className="subtle-button" disabled={disabled} onClick={() => void onDeactivate(member.userId)}>Deactivate</button></>}</div>;
 }
 
-function DraftRow({ draft, actions, onError, onBusy, onPublished }: { draft: Draft; actions: { call: <T>(path: string, init?: RequestInit) => Promise<T> }; onError: (value: string) => void; onBusy: (value: boolean) => void; onPublished: () => Promise<void> }) {
+function DraftRow({ draft, exercises, actions, busy, onError, onBusy, onPublished, onDraftUpdated }: { draft: Draft; exercises: Exercise[]; actions: { call: <T>(path: string, init?: RequestInit) => Promise<T> }; busy: boolean; onError: (value: string) => void; onBusy: (value: boolean) => void; onPublished: () => Promise<void>; onDraftUpdated: (draft: Draft) => void }) {
   const [title, setTitle] = useState(draft.title);
   const [savedTitle, setSavedTitle] = useState(draft.title);
+  const [blockOpen, setBlockOpen] = useState(false);
   async function rename() {
     onBusy(true); onError("");
-    try { await actions.call<Draft>(`/api/coaches/workouts/${draft.id}/title`, { method: "PUT", body: JSON.stringify({ title }) }); setSavedTitle(title.trim()); await onPublished(); }
+    try {
+      const updated = await actions.call<Draft>(`/api/coaches/workouts/${draft.id}/title`, { method: "PUT", body: JSON.stringify({ title }) });
+      onDraftUpdated(updated);
+      setSavedTitle(updated.title);
+      await onPublished();
+    }
     catch (reason) { onError(parseError(reason)); }
     finally { onBusy(false); }
   }
-  return <form className="publish-row" onSubmit={event => {
-    event.preventDefault(); const form = new FormData(event.currentTarget); onBusy(true); onError("");
-    actions.call<Publication>(`/api/coaches/workouts/${draft.id}/publish`, { method: "POST", body: JSON.stringify({ scheduledFor: String(form.get("scheduledFor")) }) })
-      .then(() => onPublished()).catch(error => onError(parseError(error))).finally(() => onBusy(false));
-  }}><label>Draft title<input value={title} onChange={event => setTitle(event.target.value)} maxLength={160} /></label><span><small>Draft v{draft.version} · {draft.blocks.length} blocks</small><button className="subtle-button" type="button" disabled={!title.trim() || title.trim() === savedTitle} onClick={() => void rename()}>Save title</button></span><label>Publish date<input name="scheduledFor" type="date" required defaultValue={today()} /></label><button className="button button-lime" type="submit">Publish snapshot</button></form>;
+  return <section className="draft-editor">
+    <form className="publish-row" onSubmit={event => {
+      event.preventDefault(); const form = new FormData(event.currentTarget); onBusy(true); onError("");
+      actions.call<Publication>(`/api/coaches/workouts/${draft.id}/publish`, { method: "POST", body: JSON.stringify({ scheduledFor: String(form.get("scheduledFor")) }) })
+        .then(() => onPublished()).catch(error => onError(parseError(error))).finally(() => onBusy(false));
+    }}><label>Draft title<input value={title} onChange={event => setTitle(event.target.value)} maxLength={160} /></label><span><small>Draft v{draft.version} · {draft.blocks.length} blocks</small>{blockOpen && <small>Save or cancel the open block before publishing.</small>}<button className="subtle-button" type="button" disabled={busy || !title.trim() || title.trim() === savedTitle} onClick={() => void rename()}>Save title</button></span><label>Publish date<input name="scheduledFor" type="date" required defaultValue={today()} /></label><button className="button button-lime" type="submit" disabled={busy || blockOpen}>Publish snapshot</button></form>
+    <WorkoutDraftEditor draft={draft} exercises={exercises} disabled={busy} request={(path, init) => actions.call(path, init)} onDraft={onDraftUpdated} onError={onError} onBusy={onBusy} onEditingChange={setBlockOpen} />
+  </section>;
 }
 
 function PublicationCard({ publication, actions, onError, onBusy, onSaved, busy }: { publication: Publication; actions: { call: <T>(path: string, init?: RequestInit) => Promise<T> }; onError: (value: string) => void; onBusy: (value: boolean) => void; onSaved: () => Promise<void>; busy: boolean }) {
