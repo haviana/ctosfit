@@ -41,3 +41,20 @@ dependencies {
 tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
     archiveFileName.set("ctosfit.jar")
 }
+
+tasks.named<Test>("test") {
+    val filtered = providers.gradleProperty("includeTags").orNull?.isNotBlank() == true
+    if (filtered) {
+        afterSuite(
+            org.gradle.kotlin.dsl.KotlinClosure2<
+                org.gradle.api.tasks.testing.TestDescriptor,
+                org.gradle.api.tasks.testing.TestResult,
+                Unit,
+            >({ descriptor, result ->
+                if (descriptor.parent == null && result.testCount == 0L) {
+                    throw GradleException("includeTags matched no tests in :app")
+                }
+            }),
+        )
+    }
+}

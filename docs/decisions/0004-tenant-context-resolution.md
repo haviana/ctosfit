@@ -30,5 +30,13 @@ box IDs as authorization context.
 - The app currently resolves JWT subjects to active memberships stored in PostgreSQL;
   the first exercise API uses this verified context for every repository operation.
 - Other tenant-owned endpoints must use the same context flow and box-scoped storage.
-- PostgreSQL integration coverage currently proves exercise list and mutation isolation;
-  broader workout, result, and membership-administration coverage remains required.
+- PostgreSQL Testcontainers coverage proves cross-tenant denial for exercises, workout
+  drafts, nested blocks, publications, results, personal bests, and membership
+  administration, including owner, coach, athlete, and inactive-membership boundaries.
+  See [tenant isolation](../architecture/tenant-isolation.md).
+
+## Addendum (2026-11-27)
+
+The original consequence required broader workout, result, and membership-administration
+coverage beyond exercise list and mutation isolation. That coverage is now the two suites
+named in the consequence above.

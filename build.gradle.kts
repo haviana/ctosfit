@@ -35,6 +35,11 @@ subprojects {
     }
 
     tasks.withType<Test>().configureEach {
-        useJUnitPlatform()
+        useJUnitPlatform {
+            val include = providers.gradleProperty("includeTags").orNull
+            if (!include.isNullOrBlank()) {
+                includeTags(*include.split(',').map { it.trim() }.filter { it.isNotEmpty() }.toTypedArray())
+            }
+        }
     }
 }

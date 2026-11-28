@@ -7,6 +7,7 @@ import com.ctosfit.identity.domain.Role
 import com.ctosfit.identity.domain.UserId
 import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -33,6 +34,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 
+@Tag("tenant-isolation")
 @Testcontainers
 @SpringBootTest
 class ExerciseTenantIsolationIntegrationTest @Autowired constructor(
@@ -48,6 +50,7 @@ class ExerciseTenantIsolationIntegrationTest @Autowired constructor(
         insertMembership(USER_A, BOX_A)
         insertMembership(USER_A, BOX_B)
         insertMembership(USER_ATHLETE, BOX_A, "ATHLETE")
+        insertMembership(USER_ATHLETE, BOX_B, "ATHLETE")
     }
 
     @Test
@@ -240,7 +243,7 @@ class ExerciseTenantIsolationIntegrationTest @Autowired constructor(
             get("/api/athletes/publications/{id}", publicationId)
                 .with(athlete(USER_ATHLETE))
                 .header(BOX_HEADER, BOX_B.toString()),
-        ).andExpect(status().isForbidden)
+        ).andExpect(status().isNotFound)
 
         val resultResponse = mockMvc.perform(
             post("/api/athletes/results")

@@ -60,6 +60,9 @@ jobs:
         if: steps.gradle.outputs.present == 'true'
         with:
           gradle-version: '9.7.0'
+      - name: Verify Docker for Testcontainers
+        if: steps.gradle.outputs.present == 'true'
+        run: docker info
       - name: Run Gradle checks
         if: steps.gradle.outputs.present == 'true'
         shell: bash
@@ -70,6 +73,10 @@ jobs:
           else
             gradle check
           fi
+      - name: Require the PostgreSQL tenant-isolation suite
+        if: steps.gradle.outputs.present == 'true'
+        shell: bash
+        run: bash scripts/require-tenant-isolation-results.sh
 
   frontend:
     name: Frontend build and tests
